@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "635105734088",
+    "firebase_url": "https://dk-official-max-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "dk-official-max",
+    "storage_bucket": "dk-official-max.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:635105734088:android:40cadd89262d745fec64fd",
+        "android_client_info": {
+          "package_name": "com.dkofficial.dk"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAkUj6YK-1RU_0XtuCnn6UONf9pOASM4eU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
