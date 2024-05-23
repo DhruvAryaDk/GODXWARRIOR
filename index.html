@@ -3,470 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dk Official</title>
-    <link href="https://fonts.googleapis.com/css2?family=Lobster&family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <title>Dk Official Free Fire Max Tournament</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Lobster&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
     <style>
         body {
+            font-family: 'Roboto', sans-serif;
             margin: 0;
-            font-family: 'Open Sans', sans-serif;
-            background: #121212;
+            padding: 0;
             color: #fff;
-            transition: background 0.3s, color 0.3s;
-            overflow-x: hidden;
-        }
-        .light-theme {
-            background: #f5f5f5;
-            color: #121212;
+            background: #000;
         }
         header {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 20px;
             background-color: rgba(0, 0, 0, 0.8);
-            position: sticky;
-            top: 0;
+            color: #fff;
+            padding: 20px;
+            position: relative;
             z-index: 1;
         }
         header img {
             height: 50px;
+            width: auto;
+            border: 2px solid #fff;
         }
-        nav {
-            display: flex;
-            gap: 20px;
+        .upper-corner-img {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 50px;
+            height: auto;
         }
-        nav a {
-            color: inherit;
-            text-decoration: none;
-            font-weight: 700;
+        header h1 {
+            margin: 0;
+            margin-left: 20px;
+            font-family: 'Lobster', cursive;
         }
         main {
             padding: 20px;
-        }
-        section {
-            margin-bottom: 40px;
-        }
-        h1, h2 {
-            font-family: 'Lobster', cursive;
-        }
-        .highlight {
-            color: #ff6347;
-        }
-        .commands {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        .command-button {
-            background-color: #333;
-            color: #fff;
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        .command-button:hover {
-            background-color: #555;
-        }
-        .service-image {
-            width: 100%;
-            max-width: 400px;
-            border: 2px solid #444;
-            border-radius: 10px;
-            margin-top: 20px;
-        }
-        .go-up, .go-down {
-            position: fixed;
-            right: 20px;
-            background-color: #333;
-            color: #fff;
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            z-index: 2;
-        }
-        .go-up {
-            bottom: 60px;
-        }
-        .go-down {
-            bottom: 20px;
-        }
-        footer {
-            text-align: center;
-            padding: 20px;
             background-color: rgba(0, 0, 0, 0.8);
+            color: #ddd;
+            max-width: 800px;
+            margin: auto;
         }
-        .social-icons a {
-            color: inherit;
-            margin: 0 10px;
-            font-size: 24px;
-        }
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
+        .service img {
             width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            justify-content: center;
-            align-items: center;
-            z-index: 3;
+            max-width: 300px;
+            display: block;
+            margin: 20px auto;
+            border: 2px solid #fff;
         }
-        .modal.active {
-            display: flex;
-        }
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .modal-close {
-            background: none;
-            border: none;
-            color: #fff;
-            font-size: 24px;
-            cursor: pointer;
-        }
-        .participate-box {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background-color: rgba(0, 0, 0, 0.9);
-            color: #fff;
-            padding: 40px;
-            border-radius: 10px;
-            border: 2px solid #444;
+        .service a {
+            display: block;
             text-align: center;
-            animation: participateBoxAnimation 1s ease-in-out forwards;
+            padding: 10px;
+            background-color: #ff00ff;
+            color: #fff;
+            text-decoration: none;
+            margin: 20px auto;
+            width: 200px;
+            border-radius: 5px;
         }
-        @keyframes participateBoxAnimation {
-            0% { transform: scale(0); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
+        .service a:hover {
+            background-color: #fff;
+            color: #ff00ff;
         }
-        .participate-box h2 {
-            font-family: 'Lobster', cursive;
-            margin-bottom: 20px;
-        }
-        .participate-box p {
-            font-family: 'Open Sans', sans-serif;
-            margin-bottom: 20px;
-        }
-        .participate-button {
+        .commands button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px;
             background-color: #333;
             color: #fff;
-            padding: 10px 20px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            font-family: 'Open Sans', sans-serif;
-            margin-top: 20px;
-        }
-        .participate-button:hover {
-            background-color: #555;
-        }
-        .live-text {
-            display: flex;
-            gap: 10px;
-        }
-        .live-text span {
-            opacity: 0;
-            animation: liveTextAnimation 2s infinite;
-        }
-        .live-text span:nth-child(1) { animation-delay: 0s; }
-        .live-text span:nth-child(2) { animation-delay: 0.2s; }
-        .live-text span:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes liveTextAnimation {
-            0%, 100% { opacity: 0; transform: translateY(20px); }
-            50% { opacity: 1; transform: translateY(0); }
-        }
-        .admin-login {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background-color: #333;
-            color: #fff;
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            z-index: 2;
-        }
-        .admin-login-form {
-            display: none;
-            flex-direction: column;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: rgba(0, 0, 0, 0.9);
-            padding: 40px;
-            border-radius: 10px;
-            border: 2px solid #444;
-            z-index: 4;
-        }
-        .admin-login-form input {
-            margin-bottom: 20px;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-        .admin-login-form button {
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-            background-color: #333;
-            color: #fff;
-            cursor: pointer;
-        }
-        .admin-login-form button:hover {
-            background-color: #555;
-        }
-        .admin-editor {
-            display: none;
-            flex-direction: column;
-            position: fixed;
-            top: 20%;
-            right: 20%;
-            background-color: rgba(0, 0, 0, 0.9);
-            padding: 20px;
-            border-radius: 10px;
-            border: 2px solid #444;
-            z-index: 5;
-        }
-        .admin-editor input, .admin-editor textarea {
-            margin-bottom: 10px;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-        .admin-editor button {
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-            background-color: #333;
-            color: #fff;
-            cursor: pointer;
-        }
-        .admin-editor button:hover {
-            background-color: #555;
-        }
-        .bg-animation {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 80%);
-            background-size: 200% 200%;
-            animation: bg-animation 5s infinite alternate;
-            z-index: -1;
-        }
-        @keyframes bg-animation {
-            from { background-position: 0 0; }
-            to { background-position: 100% 100%; }
-        }
-        .admin-panel {
-            display: none;
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: rgba(0, 0, 0, 0.9);
-            padding: 10px 20px;
-            border-radius: 5px;
-            border: 2px solid #444;
-            z-index: 5;
-            color: #fff;
-        }
-        .admin-panel button {
-            background-color: #333;
-            color: #fff;
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin: 5px;
-        }
-        .admin-panel button:hover {
-            background-color: #555;
         }
     </style>
 </head>
 <body>
-    <div class="bg-animation"></div>
     <header>
-        <img src="https://www.dropbox.com/scl/fi/p3wheq6kuja0xdytw7wgo/Snapchat-2002966541.jpg?raw=1" alt="Logo">
-        <h1 class="highlight">Dk Official</h1>
-        <div class="theme-toggle">Toggle Theme</div>
+        <img src="https://example.com/logo.png" alt="Dk Official Logo">
+        <img src="https://www.dropbox.com/scl/fi/5ltks3g2kdug791y4hsg6/IMG_20240408_201841.png?rlkey=3jdibfqul8lbfwavohm7fztfv&dl=0" alt="Upper Corner Image" class="upper-corner-img">
+        <h1 id="main-title">Dk Official Free Fire Max Tournament</h1>
     </header>
-    <nav>
-        <a href="#home">Home</a>
-        <a href="#about">About</a>
-        <a href="#services">Services</a>
-    </nav>
     <main>
-        <section id="home">
-            <h2>Welcome to Dk Official</h2>
-            <p>Your one-stop destination for all things awesome.</p>
+        <section class="service">
+            <img src="https://www.dropbox.com/scl/fi/n9z4mzyovww0092wyyswy/15695-Free-Fire.jpg?rlkey=npbdidvfoxpopw5f5c1pks23q&st=tdf1d47e&dl=0" alt="Free Fire Service">
+            <a href="FreeFire.html">Participate Now</a>
         </section>
-        <section id="about">
-            <h2>About Us</h2>
-            <p>We are dedicated to bringing you the best content and experiences. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
-        </section>
-        <section id="services">
-            <h2>Our Services</h2>
-            <div class="live-text">
-                <span>L</span><span>I</span><span>V</span><span>E</span>
-            </div>
-            <img src="https://www.dropbox.com/scl/fi/n9z4mzyovww0092wyyswy/15695-Free-Fire.jpg?raw=1" alt="Service A" class="service-image">
-            <p><a href="FreeFire.html" class="participate-button">Tap to Participate</a></p>
-        </section>
+        <div class="commands">
+            <button onclick="editTitle()">Edit Title</button>
+        </div>
     </main>
-    <button class="go-up" onclick="scrollToTop()">Up</button>
-    <button class="go-down" onclick="scrollToBottom()">Down</button>
-    <footer>
-        <div class="social-icons">
-            <a href="https://www.instagram.com/__dhruv__x__arya__x__?igsh=c3NodjY0eHowbjA=" target="_blank">Instagram</a>
-            <a href="https://t.me/Dhruv_Aryaa" target="_blank">Telegram</a>
-        </div>
-        <p>Contact us at: 7037700795</p>
-    </footer>
-    <button class="admin-login" onclick="toggleAdminLogin()">Admin Login</button>
-    <div class="admin-login-form" id="adminLoginForm">
-        <input type="password" id="adminPassword" placeholder="Enter Admin Password">
-        <button onclick="adminLogin()">Login</button>
-    </div>
-    <div class="admin-panel" id="adminPanel">
-        <button onclick="showAdminEditor('text')">Add Text</button>
-        <button onclick="showAdminEditor('image')">Add Image</button>
-        <button onclick="showAdminEditor('removeText')">Remove Text</button>
-        <button onclick="showAdminEditor('removeImage')">Remove Image</button>
-    </div>
-    <div class="admin-editor" id="adminEditor">
-        <div class="modal-header">
-            <h3 id="editorTitle"></h3>
-            <button class="modal-close" onclick="closeAdminEditor()">×</button>
-        </div>
-        <input type="text" id="adminTextInput" placeholder="Enter text" style="display: none;">
-        <textarea id="adminTextArea" placeholder="Enter text to remove" style="display: none;"></textarea>
-        <input type="file" id="adminImageInput" accept="image/*" style="display: none;">
-        <button onclick="executeAdminAction()">Submit</button>
-    </div>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script>
-        const themeToggle = document.querySelector('.theme-toggle');
-        const body = document.body;
+        // Your web app's Firebase configuration
+        var firebaseConfig = {
+            apiKey: "AIzaSyAkUj6YK-1RU_0XtuCnn6UONf9pOASM4eU",
+            authDomain: "dk-official-max.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+            projectId: "dk-official-max",
+            storageBucket: "dk-official-max.appspot.com.",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "1:635105734088:android:40cadd89262d745fec64fd"
+        };
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
 
-        themeToggle.addEventListener('click', () => {
-            body.classList.toggle('light-theme');
+        const dbRef = firebase.database().ref();
+        const titleRef = dbRef.child('mainTitle');
+
+        // Fetch initial title and update in real-time
+        titleRef.on('value', (snapshot) => {
+            document.getElementById('main-title').textContent = snapshot.val();
         });
 
-        function scrollToTop() {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function scrollToBottom() {
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-        }
-
-        function toggleAdminLogin() {
-            const loginForm = document.getElementById('adminLoginForm');
-            loginForm.style.display = loginForm.style.display === 'flex' ? 'none' : 'flex';
-        }
-
-        function adminLogin() {
-            const password = document.getElementById('adminPassword').value;
-            if (password === '@7037700795GODXWARRIOR') {
-                alert('Admin login successful. You can now edit the page content.');
-                document.getElementById('adminPanel').style.display = 'flex';
-                document.getElementById('adminLoginForm').style.display = 'none';
-            } else {
-                alert('Incorrect password. Please try again.');
+        // Edit title function for admin
+        function editTitle() {
+            const newTitle = prompt('Enter the new title:', document.getElementById('main-title').textContent);
+            if (newTitle) {
+                titleRef.set(newTitle);
+                toastr.success('Title updated successfully!');
             }
         }
-
-        function showAdminEditor(action) {
-            const editor = document.getElementById('adminEditor');
-            const title = document.getElementById('editorTitle');
-            const textInput = document.getElementById('adminTextInput');
-            const textArea = document.getElementById('adminTextArea');
-            const imageInput = document.getElementById('adminImageInput');
-
-            textInput.style.display = 'none';
-            textArea.style.display = 'none';
-            imageInput.style.display = 'none';
-
-            if (action === 'text') {
-                title.innerText = 'Add Text';
-                textInput.style.display = 'block';
-            } else if (action === 'removeText') {
-                title.innerText = 'Remove Text';
-                textArea.style.display = 'block';
-            } else if (action === 'image') {
-                title.innerText = 'Add Image';
-                imageInput.style.display = 'block';
-            } else if (action === 'removeImage') {
-                title.innerText = 'Remove Image';
-                textArea.style.display = 'block';
-            }
-
-            editor.style.display = 'flex';
-        }
-
-        function closeAdminEditor() {
-            document.getElementById('adminEditor').style.display = 'none';
-        }
-
-        function executeAdminAction() {
-            const title = document.getElementById('editorTitle').innerText;
-            const textInput = document.getElementById('adminTextInput').value;
-            const textArea = document.getElementById('adminTextArea').value;
-            const imageInput = document.getElementById('adminImageInput').files[0];
-
-            if (title === 'Add Text') {
-                const newParagraph = document.createElement('p');
-                newParagraph.textContent = textInput;
-                document.querySelector('main').appendChild(newParagraph);
-            } else if (title === 'Remove Text') {
-                const paragraphs = document.querySelectorAll('main p');
-                paragraphs.forEach(paragraph => {
-                    if (paragraph.textContent.includes(textArea)) {
-                        paragraph.remove();
-                    }
-                });
-            } else if (title === 'Add Image') {
-                if (imageInput) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const img = document.createElement('img');
-                        img.src = e.target.result;
-                        img.classList.add('service-image');
-                        document.querySelector('main').appendChild(img);
-                    }
-                    reader.readAsDataURL(imageInput);
-                }
-            } else if (title === 'Remove Image') {
-                const images = document.querySelectorAll('main img');
-                images.forEach(img => {
-                    if (img.alt.includes(textArea)) {
-                        img.remove();
-                    }
-                });
-            }
-
-            closeAdminEditor();
-        }
-
-        window.addEventListener('load', () => {
-            const images = document.querySelectorAll('img');
-            images.forEach(img => {
-                const src = img.getAttribute('src');
-                img.setAttribute('src', src.replace('?rlkey=', '?raw=1&rlkey='));
-            });
-        });
     </script>
 </body>
 </html>
