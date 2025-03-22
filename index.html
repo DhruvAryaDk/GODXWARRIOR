@@ -1,536 +1,379 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Dk Official Chat Program</title></title>
-  <!-- Gun.js and SEA for user security -->
-  <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
-  <!-- Google Fonts for custom typography -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Advanced Text/Code Converter</title>
+  <!-- Optional Google Font -->
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;700&family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Rubik:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    /* Reset and base styles */
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { height: 100%; font-family: 'Source Sans Pro', sans-serif; }
-    body {
-      background: linear-gradient(135deg, #001f3f, #00508a);
+    /************************************************************************
+     *  GLOBAL & RESET
+     ************************************************************************/
+    * {
+      margin: 0; 
+      padding: 0; 
+      box-sizing: border-box;
+    }
+    html, body {
+      height: 100%;
+      background: linear-gradient(135deg, #212121, #2b2b2b 50%, #1a1a1a);
+      font-family: 'Rubik', sans-serif;
       color: #f0f0f0;
-      overflow: hidden;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      animation: bgPulse 10s infinite alternate;
+      overflow-x: hidden;
     }
-    @keyframes bgPulse {
-      from { filter: brightness(0.9); }
-      to { filter: brightness(1.1); }
+    body {
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: flex-start; 
+      padding: 20px;
     }
-    /* Main container */
-    .container {
-      width: 95%;
-      max-width: 900px;
-      min-height: 90vh;
-      background: rgba(0, 0, 0, 0.4);
-      border: 2px solid #0d6efd;
-      border-radius: 10px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      animation: containerEntry 1s ease-out forwards;
-    }
-    @keyframes containerEntry {
-      from { transform: scale(0.9); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
-    }
-    /* Authentication Section */
-    #authSection {
-      padding: 30px;
+
+    /************************************************************************
+     *  HEADER
+     ************************************************************************/
+    header {
+      width: 100%;
       text-align: center;
-      background: linear-gradient(135deg, #00508a, #001f3f);
-      flex: 0 0 auto;
-    }
-    #authSection h2 {
-      font-family: 'Roboto Slab', serif;
-      font-size: 2em;
+      padding: 1rem 0;
+      background: rgba(0,0,0,0.2);
+      backdrop-filter: blur(3px);
+      border-radius: 8px;
       margin-bottom: 20px;
-      text-shadow: 1px 1px 3px #000;
+      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+      animation: headerFadeIn 1.2s ease;
     }
-    #authForm {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 15px;
+    @keyframes headerFadeIn {
+      0% { opacity: 0; transform: translateY(-20px); }
+      100% { opacity: 1; transform: translateY(0); }
     }
-    #authForm input {
-      width: 80%;
-      padding: 12px;
-      border-radius: 8px;
-      border: 1px solid #0d6efd;
-      font-size: 1em;
-      outline: none;
-      transition: all 0.3s ease;
-    }
-    #authForm input:focus {
-      box-shadow: 0 0 8px #0d6efd;
-    }
-    #authForm button {
-      width: 50%;
-      padding: 12px;
-      border: none;
-      border-radius: 8px;
-      background: #0d6efd;
-      color: #fff;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background 0.3s ease, transform 0.2s ease;
-    }
-    #authForm button:hover {
-      background: #0950c1;
-      transform: scale(1.03);
-    }
-    .toggleAuth {
-      margin-top: 15px;
-      font-size: 0.9em;
-      color: #a0c4ff;
-      cursor: pointer;
-      transition: color 0.3s;
-    }
-    .toggleAuth:hover { color: #d0e2ff; }
-    #authMessage {
-      margin-top: 10px;
-      font-weight: bold;
-    }
-    /* Chat area styling */
-    #chatArea {
-      display: none;
-      flex-direction: column;
-      flex: 1;
-      overflow: hidden;
-    }
-    #chatHeader {
-      background: #0d6efd;
-      padding: 15px 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid #004a99;
-    }
-    #chatHeader h3 {
-      font-family: 'Roboto Slab', serif;
-      font-size: 1.6em;
+    header h1 {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 2rem;
+      color: #ffeb3b;
+      letter-spacing: 1px;
       text-shadow: 1px 1px 2px #000;
     }
-    #logoutBtn {
-      padding: 8px 16px;
-      background: #dc3545;
-      border: none;
-      border-radius: 6px;
-      color: #fff;
-      cursor: pointer;
-      transition: background 0.3s ease;
-    }
-    #logoutBtn:hover { background: #c82333; }
-    #messages {
-      flex: 1;
+
+    /************************************************************************
+     *  CONVERTER CONTAINER
+     ************************************************************************/
+    .converter-container {
+      width: 95%;
+      max-width: 800px;
+      background: rgba(34,34,34,0.7);
+      border-radius: 10px;
       padding: 20px;
-      overflow-y: auto;
-      background: rgba(0,0,0,0.3);
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
-    .message {
-      background: rgba(255,255,255,0.1);
-      padding: 12px;
-      border-radius: 8px;
-      border-left: 4px solid transparent;
+      margin-bottom: 20px;
+      box-shadow: 0 0 25px rgba(0,0,0,0.5);
       position: relative;
-      animation: slideIn 0.4s ease-out;
-      transition: transform 0.2s;
+      animation: fadeInUp 1.2s ease;
     }
-    .message:hover { transform: scale(1.01); }
-    .message.own { background: rgba(0, 128, 0, 0.3); border-left-color: #28a745; }
-    .message.pinned { border-left-color: gold; }
-    .message .meta {
-      font-size: 0.8em;
-      color: #d0d0d0;
-      margin-bottom: 5px;
+    @keyframes fadeInUp {
+      0% { opacity: 0; transform: translateY(40px); }
+      100% { opacity: 1; transform: translateY(0); }
     }
-    .message .text {
-      font-size: 1em;
-      line-height: 1.4;
-    }
-    .message img, .message video {
-      margin-top: 10px;
-      max-width: 100%;
-      max-height: 250px;
-      border-radius: 6px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.5);
-    }
-    .message .actions {
+    .converter-container:before {
+      content: '';
       position: absolute;
-      top: 8px;
-      right: 8px;
-      display: flex;
-      gap: 5px;
+      top: -2px; 
+      left: -2px;
+      right: -2px; 
+      bottom: -2px;
+      border: 2px solid #ffeb3b;
+      border-radius: 12px;
+      filter: blur(4px);
+      opacity: 0.2;
+      z-index: -1;
     }
-    .message .actions button {
-      background: rgba(255,255,255,0.2);
-      border: none;
-      color: #ffdc00;
-      padding: 4px 8px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 0.75em;
-      transition: background 0.3s ease;
+    .converter-container h2 {
+      font-size: 1.5rem;
+      margin-bottom: 15px;
+      text-align: center;
+      color: #ffd600;
+      text-shadow: 1px 1px 2px #000;
     }
-    .message .actions button:hover {
-      background: rgba(255,255,255,0.4);
+    .converter-container label {
+      font-size: 1.1rem;
+      margin-bottom: 6px;
+      display: inline-block;
+      font-weight: 600;
     }
-    @keyframes slideIn {
-      from { transform: translateX(-20px); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
-    }
-    /* Input area for messages */
-    #inputArea {
-      background: #002d56;
-      padding: 15px 20px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      border-top: 1px solid #004a99;
-    }
-    #chatInput {
-      flex: 1;
-      padding: 12px;
+    .converter-container textarea {
+      width: 100%;
+      height: 130px;
+      background: #1e1e1e;
+      color: #fff;
+      font-size: 1rem;
+      border: 2px solid #444;
       border-radius: 6px;
-      border: 1px solid #0d6efd;
-      font-size: 1em;
+      padding: 10px;
       outline: none;
-      transition: all 0.3s ease;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+      font-family: 'Roboto Mono', monospace;
+      resize: vertical;
     }
-    #chatInput:focus {
-      box-shadow: 0 0 8px #0d6efd;
+    .converter-container textarea:focus {
+      border-color: #ffd600;
+      box-shadow: 0 0 10px rgba(255,214,0,0.6);
     }
-    #fileInput {
-      color: #fff;
-      cursor: pointer;
+    .btn-group {
+      display: flex;
+      gap: 20px;
+      margin-top: 15px;
+      justify-content: center;
     }
-    #sendBtn {
-      padding: 12px 20px;
-      background: #28a745;
+    button {
+      background: #ffc107;
       border: none;
-      border-radius: 6px;
-      color: #fff;
-      font-weight: bold;
+      color: #1e1e1e;
+      font-size: 1rem;
+      font-weight: 700;
+      padding: 10px 20px;
+      border-radius: 5px;
       cursor: pointer;
-      transition: background 0.3s ease, transform 0.2s ease;
+      transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+      font-family: 'Rubik', sans-serif;
     }
-    #sendBtn:hover {
-      background: #218838;
-      transform: scale(1.02);
+    button:hover {
+      background: #ffca28;
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(255,193,7,0.4);
     }
-    /* Responsive design tweaks */
-    @media (max-width: 768px) {
-      #authForm input { width: 90%; }
-      #authForm button { width: 60%; }
-      #chatHeader h3 { font-size: 1.4em; }
-      #sendBtn { padding: 10px 16px; }
+    .clear-btn {
+      background: #f44336;
+      color: #fff;
+    }
+    .clear-btn:hover {
+      background: #e53935;
+      box-shadow: 0 4px 12px rgba(244,67,54,0.4);
+    }
+
+    /************************************************************************
+     *  OUTPUT SECTION
+     ************************************************************************/
+    .output-container {
+      width: 95%;
+      max-width: 800px;
+      background: rgba(34,34,34,0.7);
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 0 25px rgba(0,0,0,0.5);
+      position: relative;
+      animation: fadeInUp 1.2s ease 0.3s;
+      /* starts after .3s */
+    }
+    .output-container:before {
+      content: '';
+      position: absolute;
+      top: -2px; 
+      left: -2px;
+      right: -2px; 
+      bottom: -2px;
+      border: 2px solid #03a9f4;
+      border-radius: 12px;
+      filter: blur(4px);
+      opacity: 0.2;
+      z-index: -1;
+    }
+    .output-container h2 {
+      font-size: 1.5rem;
+      margin-bottom: 15px;
+      text-align: center;
+      color: #03a9f4;
+      text-shadow: 1px 1px 2px #000;
+    }
+    .output-container textarea {
+      width: 100%;
+      height: 130px;
+      background: #1e1e1e;
+      color: #fff;
+      font-size: 1rem;
+      border: 2px solid #444;
+      border-radius: 6px;
+      padding: 10px;
+      outline: none;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+      font-family: 'Roboto Mono', monospace;
+      resize: vertical;
+    }
+    .output-container textarea:focus {
+      border-color: #03a9f4;
+      box-shadow: 0 0 10px rgba(3,169,244,0.6);
+    }
+
+    /************************************************************************
+     *  FOOTER
+     ************************************************************************/
+    footer {
+      width: 100%;
+      text-align: center;
+      margin-top: 20px;
+      padding: 10px 0;
+      font-size: 0.9rem;
+      color: #fff;
+      background: rgba(0,0,0,0.2);
+      backdrop-filter: blur(3px);
+      border-radius: 8px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+      animation: footerFadeIn 1.2s ease 0.6s;
+    }
+    @keyframes footerFadeIn {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    /************************************************************************
+     *  RESPONSIVE
+     ************************************************************************/
+    @media (max-width: 600px) {
+      header h1 {
+        font-size: 1.6rem;
+      }
+      .converter-container, .output-container {
+        padding: 15px;
+      }
+      .converter-container h2, .output-container h2 {
+        font-size: 1.3rem;
+      }
+      button {
+        font-size: 0.95rem;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <!-- Authentication Section -->
-    <div id="authSection">
-      <h2 id="authTitle">Login</h2>
-      <form id="authForm">
-        <input type="text" id="username" placeholder="Enter your username" required>
-        <input type="password" id="password" placeholder="Enter your password" required>
-        <button type="submit" id="authBtn">Login</button>
-      </form>
-      <div class="toggleAuth" id="toggleAuth">Don't have an account? Register here.</div>
-      <div id="authMessage"></div>
-    </div>
-    
-    <!-- Chat Area -->
-    <div id="chatArea">
-      <div id="chatHeader">
-        <h3 id="welcomeMsg">Welcome</h3>
-        <button id="logoutBtn">Logout</button>
-      </div>
-      <div id="messages"></div>
-      <div id="inputArea">
-        <input type="text" id="chatInput" placeholder="Type your message...">
-        <input type="file" id="fileInput" accept="image/*,video/*,application/pdf,.txt">
-        <button id="sendBtn">Send</button>
-      </div>
+  <header>
+    <h1>Advanced Text/Code Converter</h1>
+  </header>
+
+  <div class="converter-container">
+    <h2>Input Section</h2>
+    <label for="inputText">Enter Text or Code (CODE:):</label>
+    <textarea id="inputText" placeholder="Type or paste here..."></textarea>
+    <div class="btn-group">
+      <button id="convertBtn">Convert</button>
+      <button id="clearBtn" class="clear-btn">Clear</button>
     </div>
   </div>
 
+  <div class="output-container">
+    <h2>Converted Output</h2>
+    <label for="outputText">Result:</label>
+    <textarea id="outputText" readonly placeholder="Result will appear here..."></textarea>
+  </div>
+
+  <footer>
+    <p>Created by @Dk Official</p>
+  </footer>
+
   <script>
-    // Initialize Gun and reference nodes
-    const gun = Gun(['https://gunjs.herokuapp.com/gun']);
-    const chat = gun.get('advanced-gun-chat-room');
-    const pinned = gun.get('advanced-gun-chat-pinned');
-    let msgCount = 0;
-    let windowFocused = true;
+  /************************************************************************
+   * Base64 Encoding/Decoding Helpers
+   ************************************************************************/
+  function encodeBase64(str) {
+    return btoa(unescape(encodeURIComponent(str)));
+  }
+  function decodeBase64(str) {
+    try {
+      return decodeURIComponent(escape(atob(str)));
+    } catch(e) {
+      return "Error: Invalid code format.";
+    }
+  }
 
-    // DOM Elements
-    const authSection = document.getElementById('authSection');
-    const authForm = document.getElementById('authForm');
-    const authTitle = document.getElementById('authTitle');
-    const authBtn = document.getElementById('authBtn');
-    const toggleAuth = document.getElementById('toggleAuth');
-    const authMessage = document.getElementById('authMessage');
-    const chatArea = document.getElementById('chatArea');
-    const welcomeMsg = document.getElementById('welcomeMsg');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const messagesDiv = document.getElementById('messages');
-    const chatInput = document.getElementById('chatInput');
-    const sendBtn = document.getElementById('sendBtn');
-    const fileInput = document.getElementById('fileInput');
+  /************************************************************************
+   * Main Conversion Logic
+   ************************************************************************/
+  function convertText() {
+    const inputArea = document.getElementById('inputText');
+    const outputArea = document.getElementById('outputText');
+    let inputVal = inputArea.value.trim();
 
-    let isRegister = false;
-    let currentUser = null;
-    let currentUsername = '';
+    if(!inputVal) return; // do nothing if empty
 
-    // Broadcast Notification: Request permission on load if not granted
-    if ('Notification' in window && Notification.permission !== 'granted') {
-      Notification.requestPermission();
+    let result = "";
+    let isEncoding = true;
+
+    // If starts with "CODE:", decode. Otherwise, encode.
+    if (inputVal.startsWith("CODE:")) {
+      const codePart = inputVal.substring(5).trim();
+      result = decodeBase64(codePart);
+      isEncoding = false;
+    } else {
+      // Encode the plain text and prepend marker
+      result = "CODE: " + encodeBase64(inputVal);
+      isEncoding = true;
     }
 
-    // Toggle Login / Registration Mode
-    toggleAuth.addEventListener('click', () => {
-      isRegister = !isRegister;
-      authTitle.textContent = isRegister ? "Register" : "Login";
-      authBtn.textContent = isRegister ? "Register" : "Login";
-      toggleAuth.textContent = isRegister ? "Already have an account? Login here." : "Don't have an account? Register here.";
-      authMessage.textContent = "";
-    });
+    // Show the result
+    outputArea.value = result;
+    // Clear the input
+    inputArea.value = "";
 
-    // Check for remembered user on page load
-    window.addEventListener('load', () => {
-      const savedUser = localStorage.getItem('gunUser');
-      if (savedUser) {
-        try {
-          const parsed = JSON.parse(savedUser);
-          gun.user().auth(parsed.alias, parsed.pass, (ack) => {
-            if (!ack.err) {
-              currentUser = gun.user();
-              currentUsername = parsed.alias;
-              enterChat();
-            } else {
-              localStorage.removeItem('gunUser');
-            }
-          });
-        } catch (e) {
-          console.error("Saved user error:", e);
+    // If we encoded, try opening WhatsApp with the code
+    if (isEncoding) {
+      const waUrl = "https://api.whatsapp.com/send?text=" + encodeURIComponent(result);
+      const waWindow = window.open(waUrl, "_blank");
+      // If popup is blocked, copy to clipboard
+      if (!waWindow) {
+        copyToClipboard(result);
+        alert("WhatsApp could not be opened. The code has been copied to your clipboard. Please paste it manually in WhatsApp.");
+      }
+    }
+  }
+
+  /************************************************************************
+   * Copy to Clipboard
+   ************************************************************************/
+  function copyToClipboard(text) {
+    const tempInput = document.createElement("textarea");
+    tempInput.style.position = "fixed";
+    tempInput.style.opacity = "0";
+    tempInput.value = text;
+    document.body.appendChild(tempInput);
+    tempInput.select();
+    document.execCommand("copy");
+    document.body.removeChild(tempInput);
+  }
+
+  /************************************************************************
+   * Auto-Paste from Clipboard (if permission is granted)
+   ************************************************************************/
+  async function attemptClipboardPaste() {
+    // Attempt to read from clipboard
+    if (navigator.clipboard && document.hasFocus()) {
+      try {
+        const clipText = await navigator.clipboard.readText();
+        // Only paste if input is empty
+        const inputArea = document.getElementById('inputText');
+        if (clipText && !inputArea.value) {
+          inputArea.value = clipText;
         }
-      }
-    });
-
-    // Authentication form submit
-    authForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const alias = document.getElementById('username').value.trim();
-      const pass = document.getElementById('password').value;
-      if (!alias || !pass) return;
-      if (isRegister) {
-        // Create a new user account
-        gun.user().create(alias, pass, (ack) => {
-          if (ack.err) {
-            authMessage.style.color = "#ff4d4d";
-            authMessage.textContent = "Registration error: " + ack.err;
-          } else {
-            authMessage.style.color = "#28a745";
-            authMessage.textContent = "Registered successfully. Logging in...";
-            gun.user().auth(alias, pass, (ack2) => {
-              if (!ack2.err) {
-                currentUser = gun.user();
-                currentUsername = alias;
-                localStorage.setItem('gunUser', JSON.stringify({ alias, pass }));
-                enterChat();
-              } else {
-                authMessage.style.color = "#ff4d4d";
-                authMessage.textContent = "Login error: " + ack2.err;
-              }
-            });
-          }
-        });
-      } else {
-        // Login an existing user
-        gun.user().auth(alias, pass, (ack) => {
-          if (ack.err) {
-            authMessage.style.color = "#ff4d4d";
-            authMessage.textContent = "Login error: " + ack.err;
-          } else {
-            currentUser = gun.user();
-            currentUsername = alias;
-            localStorage.setItem('gunUser', JSON.stringify({ alias, pass }));
-            enterChat();
-          }
-        });
-      }
-    });
-
-    // Logout logic
-    logoutBtn.addEventListener('click', () => {
-      localStorage.removeItem('gunUser');
-      location.reload();
-    });
-
-    // Enter chat view after authentication
-    function enterChat() {
-      authSection.style.display = "none";
-      chatArea.style.display = "flex";
-      welcomeMsg.textContent = "Welcome, " + currentUsername;
-      loadMessages();
-    }
-
-    // Load messages from Gun and listen for new ones
-    function loadMessages() {
-      chat.map().on((data, key) => {
-        if (data) {
-          if (data.deleted) {
-            const msgElem = document.getElementById(key);
-            if (msgElem) msgElem.innerHTML = "<em>This message was removed.</em>";
-            return;
-          }
-          msgCount++;
-          if (msgCount >= 1000) {
-            clearAllChats();
-            return;
-          }
-          renderMessage(data, key);
-          if (!windowFocused && currentUser && data.author !== currentUser.is.pub) {
-            broadcastNotification(data);
-          }
-        }
-      });
-      // Listen for pinned messages
-      pinned.map().on((data, key) => {
-        if (data && data.pinned) {
-          const msgElem = document.getElementById(key);
-          if (msgElem && !msgElem.classList.contains('pinned')) {
-            msgElem.classList.add('pinned');
-          }
-        }
-      });
-    }
-
-    // Render a single message element
-    function renderMessage(data, key) {
-      if (document.getElementById(key)) return;
-      const msgDiv = document.createElement('div');
-      msgDiv.classList.add('message');
-      if (data.author === currentUser.is.pub) msgDiv.classList.add('own');
-      msgDiv.id = key;
-      let content = `<div class="meta">${data.username} • ${new Date(data.timestamp).toLocaleTimeString()}</div>`;
-      if (data.text) content += `<div class="text">${data.text}</div>`;
-      if (data.file && data.fileType) {
-        if (data.fileType.startsWith("image")) {
-          content += `<img src="${data.file}" alt="Image Message">`;
-        } else if (data.fileType.startsWith("video")) {
-          content += `<video controls src="${data.file}"></video>`;
-        } else {
-          content += `<a href="${data.file}" target="_blank" style="color:#0d6efd;">Download File</a>`;
-        }
-      }
-      if (data.author === currentUser.is.pub) {
-        content += `<div class="actions">
-                      <button onclick="pinMessage('${key}')">Pin</button>
-                      <button onclick="deleteMessage('${key}')">Delete</button>
-                    </div>`;
-      }
-      msgDiv.innerHTML = content;
-      messagesDiv.appendChild(msgDiv);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
-
-    // Send message logic: handles text and file attachments
-    sendBtn.addEventListener('click', sendMessage);
-    chatInput.addEventListener('keypress', (e) => {
-      if (e.key === "Enter") sendMessage();
-    });
-
-    function sendMessage() {
-      const text = chatInput.value.trim();
-      const file = fileInput.files[0];
-      if (!text && !file) return;
-      let message = {
-        username: currentUsername,
-        author: currentUser.is.pub,
-        timestamp: Date.now()
-      };
-      if (text) message.text = text;
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-          message.file = evt.target.result;
-          message.fileType = file.type;
-          postMessage(message);
-        };
-        reader.readAsDataURL(file);
-      } else {
-        postMessage(message);
-      }
-      chatInput.value = "";
-      fileInput.value = "";
-    }
-
-    function postMessage(message) {
-      chat.set(message);
-    }
-
-    // Delete a message (only its author can delete)
-    function deleteMessage(key) {
-      chat.get(key).put({ deleted: true });
-    }
-    window.deleteMessage = deleteMessage;
-
-    // Pin (toggle) a message for everyone
-    function pinMessage(key) {
-      chat.get(key).once((data) => {
-        if (data) {
-          const newStatus = !data.pinned;
-          chat.get(key).put({ pinned: newStatus });
-          if (newStatus) {
-            pinned.get(key).put({ pinned: true });
-          } else {
-            pinned.get(key).put({ pinned: false });
-          }
-        }
-      });
-    }
-    window.pinMessage = pinMessage;
-
-    // Clear all chats when message count reaches 1000
-    function clearAllChats() {
-      chat.map().once((data, key) => {
-        chat.get(key).put({ deleted: true });
-      });
-      msgCount = 0;
-    }
-
-    // Broadcast desktop notification when new message arrives while window is not focused
-    function broadcastNotification(data) {
-      if ('Notification' in window && Notification.permission === 'granted') {
-        let options = {
-          body: data.text ? data.text : "New file message received.",
-          icon: "https://cdn-icons-png.flaticon.com/512/724/724715.png",
-          vibrate: [100, 50, 100]
-        };
-        new Notification(`Message from ${data.username}`, options);
+      } catch (err) {
+        // Possibly user denied permission or no clipboard data
+        console.log("Clipboard read error: ", err);
       }
     }
+  }
 
-    // Track window focus to manage notifications
-    window.addEventListener('focus', () => { windowFocused = true; });
-    window.addEventListener('blur', () => { windowFocused = false; });
+  /************************************************************************
+   * Event Listeners
+   ************************************************************************/
+  document.getElementById('convertBtn').addEventListener('click', convertText);
+  document.getElementById('clearBtn').addEventListener('click', function() {
+    document.getElementById('inputText').value = "";
+    document.getElementById('outputText').value = "";
+  });
+
+  // Automatically attempt to paste from clipboard whenever page/tab is focused
+  window.addEventListener('focus', attemptClipboardPaste);
+  // Also attempt to paste on load (small delay to ensure doc is ready)
+  window.addEventListener('load', () => {
+    setTimeout(attemptClipboardPaste, 300);
+  });
   </script>
 </body>
 </html>
