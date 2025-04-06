@@ -1,367 +1,165 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Ultimate Habit & To‑Do Master</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- The manifest will be injected dynamically -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="monetag" content="ee5a6b58ed9f720c4f38c1b2a6f6c8ce" />
+  <title>Super To-Do + Habit Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    /* ===== Basic Reset & Layout ===== */
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', sans-serif; background: #121212; color: #eee; padding: 20px; }
-    .container { max-width: 800px; margin: auto; background: #1e1e1e; padding: 20px; border-radius: 10px; box-shadow: 0 0 20px limegreen; }
-    h1, h2 { text-align: center; margin-bottom: 10px; }
-    .clock { text-align: center; font-size: 1.2em; margin-bottom: 15px; }
-    button, input, select, textarea { font-size: 16px; padding: 10px; margin: 5px 0; width: 100%; border: none; border-radius: 5px; }
-    input, select, textarea { background: #2e2e2e; color: #fff; }
-    button { background: limegreen; color: #000; cursor: pointer; font-weight: bold; }
-    button:hover { opacity: 0.9; }
-    ul { list-style: none; margin-top: 10px; }
-    li { background: #333; margin: 5px 0; padding: 10px; border-left: 4px solid lime; display: flex; justify-content: space-between; align-items: center; }
-    .tabs { display: flex; margin-bottom: 15px; }
-    .tab-btn { flex: 1; padding: 10px; background: #2e2e2e; border: none; cursor: pointer; }
-    .tab-btn.active { background: limegreen; color: #000; }
-    .section { display: none; }
-    .section.active { display: block; }
-    .task-actions button { background: transparent; color: #f00; font-size: 1.2em; margin-left: 5px; }
-    .dark-mode-toggle { background: #ff9800; margin-top: 10px; }
-    /* Responsive */
-    @media (max-width: 600px) {
-      .tabs { flex-direction: column; }
-      .tab-btn { margin-bottom: 5px; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      background: #121212;
+      color: #fff;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 2em;
+    }
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #1e1e1e;
+      border-radius: 12px;
+    }
+    .input-section, .habit-section {
+      margin-bottom: 20px;
+    }
+    input, select {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 6px;
+      border: none;
+      font-size: 1em;
+    }
+    button {
+      padding: 12px;
+      background: #00c853;
+      border: none;
+      color: white;
+      font-size: 1em;
+      margin-top: 10px;
+      width: 100%;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .list-item {
+      background: #2a2a2a;
+      padding: 10px;
+      border-radius: 6px;
+      margin: 10px 0;
+    }
+    .time {
+      font-size: 0.9em;
+      color: #bbb;
+    }
+    .habit-complete {
+      text-decoration: line-through;
+      color: #76ff03;
     }
   </style>
 </head>
 <body>
+  <h1>To-Do & Habit Master</h1>
   <div class="container">
-    <h1>Ultimate Habit & To‑Do Master</h1>
-    <div class="clock" id="clock">00:00:00</div>
-    <!-- Tabs Navigation -->
-    <div class="tabs">
-      <button class="tab-btn active" data-tab="todo">To‑Do / Daily Tasks</button>
-      <button class="tab-btn" data-tab="habits">Habit Tracker</button>
-      <button class="tab-btn" data-tab="history">History</button>
-      <button class="tab-btn" data-tab="settings">Settings</button>
+
+    <!-- To-Do Section -->
+    <div class="input-section">
+      <h2>Add Task</h2>
+      <input type="text" id="taskInput" placeholder="What's your task?">
+      <input type="time" id="taskTime" />
+      <button onclick="addTask()">Add Task + Set Reminder</button>
+      <div id="taskList"></div>
     </div>
 
-    <!-- To‑Do / Daily Tasks Section -->
-    <div class="section active" id="todo">
-      <h2>Daily Tasks</h2>
-      <input type="text" id="todoName" placeholder="Task Title (e.g. Study, Workout)" />
-      <input type="time" id="todoTime" />
-      <textarea id="todoDesc" placeholder="Description (optional)"></textarea>
-      <select id="todoPriority">
-        <option value="Low">Low Priority</option>
-        <option value="Medium" selected>Medium Priority</option>
-        <option value="High">High Priority</option>
-      </select>
-      <label><input type="checkbox" id="todoRecurring" /> Recurring Daily</label>
-      <button onclick="addOrUpdateTask()">Add Task</button>
-      <ul id="todoList"></ul>
-    </div>
-
-    <!-- Habit Tracker Section -->
-    <div class="section" id="habits">
-      <h2>Habit Tracker</h2>
-      <input type="text" id="habitName" placeholder="Habit Name (e.g. Meditate)" />
+    <!-- Habit Tracker -->
+    <div class="habit-section">
+      <h2>Daily Habit</h2>
+      <input type="text" id="habitInput" placeholder="Habit to track">
       <button onclick="addHabit()">Add Habit</button>
-      <ul id="habitList"></ul>
+      <div id="habitList"></div>
     </div>
 
-    <!-- History Section -->
-    <div class="section" id="history">
-      <h2>Task & Habit History</h2>
-      <ul id="historyList"></ul>
-      <button onclick="clearHistory()">Clear History</button>
-    </div>
-
-    <!-- Settings Section -->
-    <div class="section" id="settings">
-      <h2>Settings</h2>
-      <button onclick="requestNotificationPermission()">Enable Notifications</button>
-      <button class="dark-mode-toggle" onclick="toggleDarkMode()">Toggle Dark Mode</button>
-      <button onclick="resetDay()">Reset Today's Tasks</button>
-    </div>
-    
-    <!-- Alarm Audio -->
-    <audio id="alarmSound" src="https://notificationsounds.com/storage/sounds/file-sounds-1152-pristine.mp3"></audio>
+    <button onclick="requestNotificationPermission()">Allow Notifications</button>
   </div>
 
+  <!-- Notification Sound -->
+  <audio id="alarmSound" src="https://assets.mixkit.co/sfx/download/mixkit-alert-bells-echo-765.wav"></audio>
+
+  <!-- Ad Script -->
+  <script data-cfasync="false" type="text/javascript">
+    (function() {
+      var script = document.createElement('script');
+      script.src = '//acscdn.com/script/suv4.js';
+      script.type = 'text/javascript';
+      script.async = true;
+      script.setAttribute('data-zone', 'YOUR_ZONE_ID'); // Replace with your Zone ID
+      document.body.appendChild(script);
+    })();
+  </script>
+
+  <!-- App Logic -->
   <script>
-    /********** PWA Setup: Manifest & Service Worker **********/
-    const manifestData = {
-      "name": "Ultimate Habit & To‑Do Master",
-      "short_name": "HabitMaster",
-      "start_url": "./",
-      "display": "standalone",
-      "background_color": "#121212",
-      "theme_color": "#0f0",
-      "icons": [
-        {
-          "src": "https://cdn-icons-png.flaticon.com/512/6195/6195700.png",
-          "sizes": "192x192",
-          "type": "image/png"
-        }
-      ]
-    };
-    const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
-    const manifestURL = URL.createObjectURL(manifestBlob);
-    const manifestLink = document.createElement('link');
-    manifestLink.rel = "manifest";
-    manifestLink.href = manifestURL;
-    document.head.appendChild(manifestLink);
-    
-    // Register Service Worker for offline caching
-    const swCode = `
-      self.addEventListener('install', event => {
-        event.waitUntil(caches.open('habit-cache').then(cache => cache.addAll(['./'])));
-      });
-      self.addEventListener('fetch', event => {
-        event.respondWith(caches.match(event.request).then(response => response || fetch(event.request)));
-      });
-    `;
-    const swBlob = new Blob([swCode], { type: 'application/javascript' });
-    const swURL = URL.createObjectURL(swBlob);
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register(swURL).then(() => console.log("Service Worker Registered")).catch(err => console.error(err));
-    }
-
-    /********** Global Variables & Local Storage **********/
-    let todoTasks = JSON.parse(localStorage.getItem("todoTasks") || "[]");
-    let habits = JSON.parse(localStorage.getItem("habits") || "[]");
-    let historyData = JSON.parse(localStorage.getItem("historyData") || "[]");
-    let editTaskIndex = null;
-    
-    /********** UI Tabs **********/
-    const tabs = document.querySelectorAll(".tab-btn");
-    const sections = document.querySelectorAll(".section");
-    tabs.forEach(btn => {
-      btn.addEventListener("click", () => {
-        tabs.forEach(b => b.classList.remove("active"));
-        sections.forEach(sec => sec.classList.remove("active"));
-        btn.classList.add("active");
-        document.getElementById(btn.getAttribute("data-tab")).classList.add("active");
-      });
-    });
-    
-    /********** Clock **********/
-    const clockEl = document.getElementById("clock");
-    function updateClock() {
-      clockEl.textContent = new Date().toLocaleTimeString();
-    }
-    setInterval(updateClock, 1000);
-    updateClock();
-
-    /********** To‑Do Tasks Functions **********/
-    const todoListEl = document.getElementById("todoList");
-    function saveTodoTasks() { localStorage.setItem("todoTasks", JSON.stringify(todoTasks)); }
-    function renderTodoTasks() {
-      todoListEl.innerHTML = "";
-      todoTasks.forEach((task, i) => {
-        const li = document.createElement("li");
-        li.innerHTML = `<span onclick="editTask(${i})">${task.name} at ${task.time} [${task.priority}]</span>
-                        <button onclick="deleteTask(${i})">&times;</button>`;
-        todoListEl.appendChild(li);
-      });
-    }
-    function addOrUpdateTask() {
-      const name = document.getElementById("todoName").value.trim();
-      const time = document.getElementById("todoTime").value;
-      const desc = document.getElementById("todoDesc").value.trim();
-      const priority = document.getElementById("todoPriority").value;
-      const recurring = document.getElementById("todoRecurring").checked;
-      if (!name || !time) return alert("Please enter task name and time.");
-      const taskObj = { name, time, desc, priority, recurring, completed: false };
-      if (editTaskIndex === null) {
-        todoTasks.push(taskObj);
-      } else {
-        todoTasks[editTaskIndex] = taskObj;
-        editTaskIndex = null;
-      }
-      saveTodoTasks();
-      renderTodoTasks();
-      document.getElementById("todoName").value = "";
-      document.getElementById("todoTime").value = "";
-      document.getElementById("todoDesc").value = "";
-      document.getElementById("todoRecurring").checked = false;
-    }
-    function editTask(index) {
-      const task = todoTasks[index];
-      document.getElementById("todoName").value = task.name;
-      document.getElementById("todoTime").value = task.time;
-      document.getElementById("todoDesc").value = task.desc;
-      document.getElementById("todoPriority").value = task.priority;
-      document.getElementById("todoRecurring").checked = task.recurring;
-      editTaskIndex = index;
-    }
-    function deleteTask(index) {
-      if (confirm("Delete this task?")) {
-        addHistory(`Deleted Task: ${todoTasks[index].name} at ${todoTasks[index].time}`);
-        todoTasks.splice(index, 1);
-        saveTodoTasks();
-        renderTodoTasks();
-      }
-    }
-    
-    /********** Habit Tracker Functions **********/
-    const habitListEl = document.getElementById("habitList");
-    function saveHabits() { localStorage.setItem("habits", JSON.stringify(habits)); }
-    function renderHabits() {
-      habitListEl.innerHTML = "";
-      habits.forEach((habit, i) => {
-        const li = document.createElement("li");
-        li.innerHTML = `<span onclick="toggleHabit(${i})">${habit.name} - Streak: ${habit.streak || 0}</span>
-                        <button onclick="deleteHabit(${i})">&times;</button>`;
-        habitListEl.appendChild(li);
-      });
-    }
-    function addHabit() {
-      const name = document.getElementById("habitName").value.trim();
-      if (!name) return alert("Enter a habit name.");
-      habits.push({ name, streak: 0, lastDone: null });
-      saveHabits();
-      renderHabits();
-      document.getElementById("habitName").value = "";
-    }
-    function toggleHabit(index) {
-      const today = new Date().toISOString().slice(0,10);
-      if (habits[index].lastDone === today) {
-        alert("Already marked for today.");
-      } else {
-        habits[index].lastDone = today;
-        habits[index].streak = (habits[index].streak || 0) + 1;
-        addHistory(`Habit done: ${habits[index].name}`);
-        saveHabits();
-        renderHabits();
-      }
-    }
-    function deleteHabit(index) {
-      if (confirm("Delete this habit?")) {
-        addHistory(`Deleted Habit: ${habits[index].name}`);
-        habits.splice(index, 1);
-        saveHabits();
-        renderHabits();
-      }
-    }
-    
-    /********** History Functions **********/
-    const historyListEl = document.getElementById("historyList");
-    function saveHistory() { localStorage.setItem("historyData", JSON.stringify(historyData)); }
-    function renderHistory() {
-      historyListEl.innerHTML = "";
-      historyData.forEach(item => {
-        const li = document.createElement("li");
-        li.textContent = item;
-        historyListEl.appendChild(li);
-      });
-    }
-    function addHistory(record) {
-      const entry = new Date().toLocaleString() + ": " + record;
-      historyData.unshift(entry);
-      saveHistory();
-      renderHistory();
-    }
-    function clearHistory() {
-      if (confirm("Clear all history?")) {
-        historyData = [];
-        saveHistory();
-        renderHistory();
-      }
-    }
-    
-    /********** Reminders & Notifications **********/
+    const taskList = document.getElementById("taskList");
+    const habitList = document.getElementById("habitList");
     const alarmSound = document.getElementById("alarmSound");
-    const motivationalQuotes = [
-      "Keep pushing forward!",
-      "You got this!",
-      "Stay focused and never give up.",
-      "Every step counts.",
-      "Make today amazing!"
-    ];
-    function getRandomQuote() {
-      return motivationalQuotes[Math.floor(Math.random()*motivationalQuotes.length)];
-    }
-    function checkReminders() {
-      const now = new Date();
-      const currentTime = now.toTimeString().slice(0,5); // HH:MM
-      todoTasks.forEach((task, i) => {
-        if (task.time === currentTime && !task.notified) {
-          triggerReminder(task.name);
-          // Mark task as notified for today
-          task.notified = true;
-          // If recurring, reset notified flag at midnight will reset tasks
-          addHistory(`Reminder triggered for task: ${task.name}`);
-          saveTodoTasks();
-        }
-      });
-    }
-    function triggerReminder(taskName) {
-      alarmSound.play();
-      const quote = getRandomQuote();
-      alert(`Reminder: ${taskName}\n\n${quote}`);
-      if (Notification.permission === "granted") {
-        new Notification("Task Reminder", { body: `${taskName}\n${quote}`, icon: "https://cdn-icons-png.flaticon.com/512/6195/6195700.png" });
-      }
-    }
-    setInterval(checkReminders, 60000); // Check every minute
-    
-    /********** Dark Mode Toggle **********/
-    function toggleDarkMode() {
-      document.body.classList.toggle("dark-mode");
-      if(document.body.classList.contains("dark-mode")){
-        document.body.style.background = "#000";
-      } else {
-        document.body.style.background = "#121212";
-      }
-    }
-    
-    /********** Reset Daily Tasks at Midnight **********/
-    function resetDay() {
-      // Clear notified flags for recurring tasks
-      todoTasks.forEach(task => {
-        if(task.recurring) {
-          task.notified = false;
-        }
-      });
-      saveTodoTasks();
-      addHistory("Daily tasks reset at midnight.");
-    }
-    // Check if midnight passed (for demo, you can call resetDay manually or use setTimeout calculations)
-    
-    /********** Notification Permission Handling **********/
+
     function requestNotificationPermission() {
-      if("Notification" in window){
-        Notification.requestPermission().then(permission => {
-          if(permission === "granted"){
-            alert("Notifications enabled!");
-          } else if(permission === "denied"){
-            alert("Notifications are blocked. Please enable them in your browser settings.");
-          }
-        });
-      } else {
-        alert("Your browser does not support notifications.");
+      Notification.requestPermission().then(permission => {
+        alert("Notification permission: " + permission);
+      });
+    }
+
+    function addTask() {
+      const taskText = document.getElementById("taskInput").value;
+      const taskTime = document.getElementById("taskTime").value;
+      if (!taskText || !taskTime) return alert("Fill both task and time!");
+
+      const item = document.createElement("div");
+      item.classList.add("list-item");
+      item.innerHTML = `<strong>${taskText}</strong><div class="time">⏰ ${taskTime}</div>`;
+      taskList.appendChild(item);
+
+      // Reminder logic
+      const now = new Date();
+      const [hours, minutes] = taskTime.split(":");
+      const taskDate = new Date();
+      taskDate.setHours(+hours, +minutes, 0, 0);
+
+      const delay = taskDate - now;
+      if (delay > 0) {
+        setTimeout(() => {
+          showNotification("Reminder", `Time to: ${taskText}`);
+          alarmSound.play();
+          alert(`Reminder: ${taskText}`);
+        }, delay);
+      }
+
+      document.getElementById("taskInput").value = "";
+    }
+
+    function addHabit() {
+      const habit = document.getElementById("habitInput").value;
+      if (!habit) return;
+      const item = document.createElement("div");
+      item.classList.add("list-item");
+      item.innerHTML = `
+        <input type="checkbox" onclick="this.parentElement.classList.toggle('habit-complete')" />
+        ${habit}
+      `;
+      habitList.appendChild(item);
+      document.getElementById("habitInput").value = "";
+    }
+
+    function showNotification(title, body) {
+      if (Notification.permission === "granted") {
+        new Notification(title, { body });
       }
     }
-    
-    /********** Initialize App **********/
-    renderTodoTasks();
-    renderHabits();
-    renderHistory();
-    
-    // Update tasks at midnight (simple check every minute)
-    setInterval(() => {
-      const now = new Date();
-      if(now.getHours() === 0 && now.getMinutes() === 0) {
-        resetDay();
-      }
-    }, 60000);
-    
-    /********** Optional: Auto-Request Notification on First Interaction **********/
-    document.body.addEventListener("click", () => {
-      if(Notification.permission === "default") {
-        requestNotificationPermission();
-      }
-    }, { once: true });
   </script>
 </body>
 </html>
