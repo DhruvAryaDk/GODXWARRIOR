@@ -2,164 +2,100 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="monetag" content="ee5a6b58ed9f720c4f38c1b2a6f6c8ce" />
-  <title>Super To-Do + Habit Tracker</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DkCloud – Decentralized File Sharing</title>
+  <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.1.1/crypto-js.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body {
-      font-family: 'Poppins', sans-serif;
-      margin: 0;
-      background: #121212;
-      color: #fff;
-      padding: 20px;
+      background: linear-gradient(to bottom right, #0f0f0f, #1f1f1f);
     }
-    h1 {
-      text-align: center;
-      font-size: 2em;
-    }
-    .container {
-      max-width: 700px;
-      margin: 0 auto;
-      padding: 20px;
-      background: #1e1e1e;
-      border-radius: 12px;
-    }
-    .input-section, .habit-section {
-      margin-bottom: 20px;
-    }
-    input, select {
-      width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      border-radius: 6px;
-      border: none;
-      font-size: 1em;
-    }
-    button {
-      padding: 12px;
-      background: #00c853;
-      border: none;
-      color: white;
-      font-size: 1em;
-      margin-top: 10px;
-      width: 100%;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    .list-item {
-      background: #2a2a2a;
-      padding: 10px;
-      border-radius: 6px;
-      margin: 10px 0;
-    }
-    .time {
-      font-size: 0.9em;
-      color: #bbb;
-    }
-    .habit-complete {
-      text-decoration: line-through;
-      color: #76ff03;
+    .glass {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
   </style>
 </head>
-<body>
-  <h1>To-Do & Habit Master</h1>
-  <div class="container">
+<body class="min-h-screen flex flex-col items-center justify-center text-white px-4 py-8">
 
-    <!-- To-Do Section -->
-    <div class="input-section">
-      <h2>Add Task</h2>
-      <input type="text" id="taskInput" placeholder="What's your task?">
-      <input type="time" id="taskTime" />
-      <button onclick="addTask()">Add Task + Set Reminder</button>
-      <div id="taskList"></div>
+  <div class="glass rounded-xl p-8 w-full max-w-xl text-center">
+    <h1 class="text-3xl font-bold mb-4">DkCloud File Uploader</h1>
+    <p class="mb-4 text-sm text-gray-400">Encrypted. Decentralized. Shareable.</p>
+
+    <input id="fileInput" type="file" class="mb-4 w-full text-sm text-gray-300 file:bg-gray-800 file:text-white file:rounded-md file:p-2" />
+    <input id="passwordInput" type="password" placeholder="Enter password to encrypt" class="mb-4 w-full px-4 py-2 bg-gray-900 text-white rounded border border-gray-700" />
+
+    <button onclick="uploadFile()" class="bg-blue-600 hover:bg-blue-800 transition px-4 py-2 rounded font-semibold">Upload</button>
+
+    <div id="linkBox" class="mt-6 hidden">
+      <p class="mb-2">Shareable Link:</p>
+      <input id="shareLink" class="w-full px-3 py-2 bg-gray-800 rounded text-sm" readonly />
     </div>
-
-    <!-- Habit Tracker -->
-    <div class="habit-section">
-      <h2>Daily Habit</h2>
-      <input type="text" id="habitInput" placeholder="Habit to track">
-      <button onclick="addHabit()">Add Habit</button>
-      <div id="habitList"></div>
-    </div>
-
-    <button onclick="requestNotificationPermission()">Allow Notifications</button>
   </div>
 
-  <!-- Notification Sound -->
-  <audio id="alarmSound" src="https://assets.mixkit.co/sfx/download/mixkit-alert-bells-echo-765.wav"></audio>
+  <div class="glass mt-8 p-6 w-full max-w-xl text-center">
+    <h2 class="text-xl font-semibold mb-3">Download File</h2>
+    <input id="fileIdInput" placeholder="Enter File ID" class="mb-2 w-full px-3 py-2 rounded bg-gray-900 text-white border border-gray-700"/>
+    <input id="filePasswordInput" type="password" placeholder="Enter password" class="mb-4 w-full px-3 py-2 rounded bg-gray-900 text-white border border-gray-700"/>
+    <button onclick="downloadFile()" class="bg-green-600 hover:bg-green-800 px-4 py-2 rounded font-semibold">Download</button>
+  </div>
 
-  <!-- Ad Script -->
-  <script data-cfasync="false" type="text/javascript">
-    (function() {
-      var script = document.createElement('script');
-      script.src = '//acscdn.com/script/suv4.js';
-      script.type = 'text/javascript';
-      script.async = true;
-      script.setAttribute('data-zone', 'YOUR_ZONE_ID'); // Replace with your Zone ID
-      document.body.appendChild(script);
-    })();
-  </script>
-
-  <!-- App Logic -->
   <script>
-    const taskList = document.getElementById("taskList");
-    const habitList = document.getElementById("habitList");
-    const alarmSound = document.getElementById("alarmSound");
+    const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
 
-    function requestNotificationPermission() {
-      Notification.requestPermission().then(permission => {
-        alert("Notification permission: " + permission);
+    function uploadFile() {
+      const file = document.getElementById('fileInput').files[0];
+      const password = document.getElementById('passwordInput').value;
+
+      if (!file || !password) return alert("Please select a file and enter a password.");
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const fileData = reader.result;
+        const encrypted = CryptoJS.AES.encrypt(fileData, password).toString();
+
+        const fileId = "file_" + Date.now().toString(36);
+        gun.get("files").get(fileId).put({
+          name: file.name,
+          type: file.type,
+          data: encrypted,
+          created: Date.now()
+        });
+
+        const url = `${location.href}#${fileId}`;
+        document.getElementById('linkBox').classList.remove('hidden');
+        document.getElementById('shareLink').value = url;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function downloadFile() {
+      const fileId = document.getElementById('fileIdInput').value || location.hash.replace('#', '');
+      const password = document.getElementById('filePasswordInput').value;
+
+      if (!fileId || !password) return alert("Enter File ID and password.");
+
+      gun.get("files").get(fileId).once(data => {
+        if (!data) return alert("File not found.");
+        try {
+          const decrypted = CryptoJS.AES.decrypt(data.data, password).toString(CryptoJS.enc.Utf8);
+          const a = document.createElement("a");
+          a.href = decrypted;
+          a.download = data.name;
+          a.click();
+        } catch (e) {
+          alert("Incorrect password or corrupted file.");
+        }
       });
     }
 
-    function addTask() {
-      const taskText = document.getElementById("taskInput").value;
-      const taskTime = document.getElementById("taskTime").value;
-      if (!taskText || !taskTime) return alert("Fill both task and time!");
-
-      const item = document.createElement("div");
-      item.classList.add("list-item");
-      item.innerHTML = `<strong>${taskText}</strong><div class="time">⏰ ${taskTime}</div>`;
-      taskList.appendChild(item);
-
-      // Reminder logic
-      const now = new Date();
-      const [hours, minutes] = taskTime.split(":");
-      const taskDate = new Date();
-      taskDate.setHours(+hours, +minutes, 0, 0);
-
-      const delay = taskDate - now;
-      if (delay > 0) {
-        setTimeout(() => {
-          showNotification("Reminder", `Time to: ${taskText}`);
-          alarmSound.play();
-          alert(`Reminder: ${taskText}`);
-        }, delay);
-      }
-
-      document.getElementById("taskInput").value = "";
-    }
-
-    function addHabit() {
-      const habit = document.getElementById("habitInput").value;
-      if (!habit) return;
-      const item = document.createElement("div");
-      item.classList.add("list-item");
-      item.innerHTML = `
-        <input type="checkbox" onclick="this.parentElement.classList.toggle('habit-complete')" />
-        ${habit}
-      `;
-      habitList.appendChild(item);
-      document.getElementById("habitInput").value = "";
-    }
-
-    function showNotification(title, body) {
-      if (Notification.permission === "granted") {
-        new Notification(title, { body });
-      }
-    }
+    // Auto-fill ID from hash
+    window.onload = () => {
+      const hash = location.hash.replace('#', '');
+      if (hash) document.getElementById('fileIdInput').value = hash;
+    };
   </script>
 </body>
 </html>
