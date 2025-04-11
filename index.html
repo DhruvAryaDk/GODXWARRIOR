@@ -3,31 +3,34 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Real-Time Global Chat App</title>
-  <!-- GunDB Core and SEA Module -->
+  <title>Advanced Global Chat App</title>
+  <!-- GunDB Core + SEA -->
   <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body {
-      background: #1a202c;
-      font-family: 'Segoe UI', sans-serif;
-    }
-    /* Custom scrollbar for chat messages */
-    #messages {
+    body { background: #1a202c; font-family: 'Segoe UI', sans-serif; }
+    /* Chat messages scrollbar */
+    #chatMessages {
       scrollbar-width: thin;
       scrollbar-color: #4a5568 transparent;
     }
-    #messages::-webkit-scrollbar {
+    #chatMessages::-webkit-scrollbar {
       width: 8px;
     }
-    #messages::-webkit-scrollbar-track {
+    #chatMessages::-webkit-scrollbar-track {
       background: transparent;
     }
-    #messages::-webkit-scrollbar-thumb {
+    #chatMessages::-webkit-scrollbar-thumb {
       background-color: #4a5568;
       border-radius: 4px;
+    }
+    /* Emoji picker style (simple) */
+    .emoji-picker span {
+      cursor: pointer;
+      font-size: 1.25rem;
+      padding: 4px;
     }
   </style>
 </head>
@@ -46,20 +49,51 @@
       <p id="authMessage" class="mt-3 text-center text-sm text-red-400"></p>
     </div>
 
-    <!-- Chat Section -->
-    <div id="chatSection" class="hidden max-w-3xl mx-auto bg-gray-800 rounded shadow-md flex flex-col h-[80vh]">
+    <!-- Advanced Chat Container -->
+    <div id="mainChat" class="hidden max-w-6xl mx-auto bg-gray-800 rounded shadow-md">
+      <!-- Header / Navigation -->
       <div class="flex items-center justify-between border-b border-gray-700 p-4">
         <div class="flex items-center space-x-3">
-          <img id="avatar" class="w-10 h-10 rounded-full border border-gray-600" src="" alt="Avatar" />
+          <img id="userAvatar" class="w-10 h-10 rounded-full border border-gray-600" src="" alt="Avatar" />
           <h2 id="welcomeMsg" class="text-xl font-bold"></h2>
         </div>
-        <button onclick="logout()" class="bg-red-600 hover:bg-red-700 p-2 rounded text-sm">Logout</button>
+        <div class="flex items-center space-x-4">
+          <select id="chatMode" class="bg-gray-700 p-2 rounded border border-gray-600">
+            <option value="global">Global Chat</option>
+            <option value="group">Group Chat</option>
+            <option value="private">Private Chat</option>
+          </select>
+          <input id="privateTarget" type="text" placeholder="Target for Private" class="hidden bg-gray-700 p-2 rounded border border-gray-600" />
+          <button onclick="logout()" class="bg-red-600 hover:bg-red-700 p-2 rounded text-sm">Logout</button>
+        </div>
       </div>
-      <div id="messages" class="flex-1 p-4 overflow-y-auto space-y-3">
-        <!-- Chat messages are appended here -->
+      <!-- Chat Messages Area -->
+      <div id="chatMessages" class="p-4 h-[50vh] overflow-y-auto space-y-3 relative">
+        <!-- Typing Indicator -->
+        <div id="typingIndicator" class="absolute bottom-0 left-0 p-2 text-sm text-gray-400 hidden"></div>
       </div>
+      <!-- Message Input Area -->
       <div class="border-t border-gray-700 p-4">
-        <form id="chatForm" class="flex" onsubmit="sendMessage(event)">
+        <div class="mb-2 flex items-center">
+          <button onclick="toggleEmojiPicker()" class="bg-gray-600 hover:bg-gray-500 p-2 rounded text-xl mr-2">😊</button>
+          <input id="fileInput" type="file" class="hidden" onchange="handleFile(this.files)" />
+          <button onclick="document.getElementById('fileInput').click()" class="bg-gray-600 hover:bg-gray-500 p-2 rounded text-sm mr-2">Attach</button>
+          <span id="replyPreview" class="text-sm italic text-gray-400"></span>
+          <button onclick="clearReply()" class="text-gray-400 ml-2 hidden" id="clearReplyBtn">Clear Reply</button>
+        </div>
+        <!-- Emoji Picker -->
+        <div id="emojiPicker" class="emoji-picker hidden bg-gray-700 p-2 rounded mb-2">
+          <!-- Add a few common emojis -->
+          <span onclick="insertEmoji('😀')">😀</span>
+          <span onclick="insertEmoji('😁')">😁</span>
+          <span onclick="insertEmoji('😂')">😂</span>
+          <span onclick="insertEmoji('🤣')">🤣</span>
+          <span onclick="insertEmoji('😊')">😊</span>
+          <span onclick="insertEmoji('😍')">😍</span>
+          <span onclick="insertEmoji('😎')">😎</span>
+          <span onclick="insertEmoji('👍')">👍</span>
+        </div>
+        <form id="msgForm" class="flex" onsubmit="sendMessage(event)">
           <input id="msgInput" type="text" placeholder="Type a message..." class="flex-1 p-2 rounded-l bg-gray-700 border border-gray-600" required />
           <button type="submit" class="bg-blue-600 hover:bg-blue-700 p-2 rounded-r">Send</button>
         </form>
@@ -68,23 +102,38 @@
   </div>
 
   <script>
-    // Initialize GunDB with a public relay server:
+    // Initialize GunDB with SEA module:
     const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-    // Create a Gun user instance:
     const gunUser = gun.user();
 
-    // Global chat reference:
-    const chat = gun.get("global-chat");
+    // Global chat nodes for different modes:
+    const chatNodes = {
+      global: gun.get("advanced-chat-global"),
+      group: gun.get("advanced-chat-group"),  // Hardcoded group chat node
+      // Private chat node will be determined dynamically (combining current and target alias)
+      private: null 
+    };
 
-    // DOM elements
+    let currentChatMode = "global";
+    let privateTarget = null;
+    let replyTo = null; // message key being replied to
+
+    // DOM Elements
     const authSection = document.getElementById("authSection");
-    const chatSection = document.getElementById("chatSection");
+    const mainChat = document.getElementById("mainChat");
     const authMessage = document.getElementById("authMessage");
-    const messagesEl = document.getElementById("messages");
     const welcomeMsg = document.getElementById("welcomeMsg");
-    const avatarImg = document.getElementById("avatar");
+    const userAvatar = document.getElementById("userAvatar");
+    const chatModeSelect = document.getElementById("chatMode");
+    const privateTargetInput = document.getElementById("privateTarget");
+    const chatMessages = document.getElementById("chatMessages");
+    const typingIndicator = document.getElementById("typingIndicator");
+    const msgInput = document.getElementById("msgInput");
+    const emojiPicker = document.getElementById("emojiPicker");
+    const replyPreview = document.getElementById("replyPreview");
+    const clearReplyBtn = document.getElementById("clearReplyBtn");
 
-    // Signup function: Create a new user
+    // Authentication Functions
     function signup() {
       const alias = document.getElementById("username").value.trim();
       const pass = document.getElementById("password").value;
@@ -101,7 +150,6 @@
       });
     }
 
-    // Login function: Authenticate an existing user
     function login() {
       const alias = document.getElementById("username").value.trim();
       const pass = document.getElementById("password").value;
@@ -113,7 +161,6 @@
         if (ack.err) {
           authMessage.textContent = "Login Error: " + ack.err;
         } else {
-          // Save session info in sessionStorage for persistence
           sessionStorage.setItem("loggedIn", "true");
           sessionStorage.setItem("alias", alias);
           authMessage.textContent = "";
@@ -122,60 +169,195 @@
       });
     }
 
-    // Logout: Ends user session
     function logout() {
       gunUser.leave();
       sessionStorage.clear();
       location.reload();
     }
 
-    // Display the chat interface and subscribe to messages
     function showChat(alias) {
       authSection.style.display = "none";
-      chatSection.classList.remove("hidden");
+      mainChat.classList.remove("hidden");
       welcomeMsg.textContent = "Hello, " + alias + "!";
-      // Generate user avatar using DiceBear's API (via initials)
-      avatarImg.src = "https://avatars.dicebear.com/api/initials/" + encodeURIComponent(alias) + ".svg";
-      // Subscribe to new chat messages
-      chat.map().on(renderMessage);
+      userAvatar.src = "https://avatars.dicebear.com/api/initials/" + encodeURIComponent(alias) + ".svg";
+      subscribeToChat();
     }
 
-    // Render chat messages in the chat window
+    // Subscribe to chat node based on current mode:
+    function subscribeToChat() {
+      let chatNode = chatNodes[currentChatMode];
+      // For private mode, if target is set, combine usernames deterministically:
+      if (currentChatMode === "private" && privateTarget) {
+        const alias = sessionStorage.getItem("alias");
+        // Create a combined room id (alphabetically sorted to be consistent)
+        let room = [alias, privateTarget].sort().join("-");
+        chatNodes.private = gun.get("advanced-chat-private-" + room);
+        chatNode = chatNodes.private;
+      }
+      // Unsubscribe previous listeners (optional cleanup)
+      chatMessages.innerHTML = "";
+      chatNode.map().on((data, key) => {
+        renderMessage(data, key);
+      });
+    }
+
+    // Render Message with advanced features (reply, delete, etc.)
     function renderMessage(data, key) {
       if (!data || !data.text) return;
-      // Prevent duplicate messages
+      // Create or update message element
       let msgEl = document.getElementById(key);
       if (!msgEl) {
         msgEl = document.createElement("div");
         msgEl.id = key;
-        msgEl.className = "p-2 rounded bg-gray-700";
-        messagesEl.appendChild(msgEl);
+        msgEl.className = "p-2 rounded bg-gray-700 relative";
+        chatMessages.appendChild(msgEl);
       }
       const time = data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : "";
-      // Display avatar for the sender using DiceBear (if alias available)
-      const senderAvatar = data.alias ? "<img class='inline-block w-6 h-6 rounded-full mr-2' src='https://avatars.dicebear.com/api/initials/" + encodeURIComponent(data.alias) + ".svg' alt='avatar' />" : "";
-      msgEl.innerHTML = senderAvatar + "<span class='font-bold'>" + (data.alias || "Anonymous") + "</span> " +
-                        "<span class='text-xs text-gray-400'>" + time + "</span><br>" +
-                        data.text;
-      // Auto-scroll to bottom
-      messagesEl.scrollTop = messagesEl.scrollHeight;
+      // Reply quote if exists:
+      let replyQuote = "";
+      if(data.replyTo) {
+        replyQuote = `<div class="border-l-2 border-gray-500 pl-2 text-xs text-gray-400 mb-1">Replying to: ${data.replyText || "message"}</div>`;
+      }
+      // Determine if the current user can delete the message:
+      const currentAlias = sessionStorage.getItem("alias");
+      const deleteBtn = (data.alias === currentAlias) ? `<button onclick="deleteMessage('${key}')" class="absolute top-1 right-1 text-xs text-red-400">Delete</button>` : "";
+      // Include a reply button:
+      const replyBtn = `<button onclick="setReply('${key}','${data.text.replace(/'/g, "\\'")}')" class="text-xs text-blue-400 ml-2">Reply</button>`;
+      
+      msgEl.innerHTML = `
+        <div>${deleteBtn}</div>
+        <div>
+          <img class="inline-block w-6 h-6 rounded-full mr-2" src="https://avatars.dicebear.com/api/initials/${encodeURIComponent(data.alias)}.svg" alt="avatar" />
+          <span class="font-bold">${data.alias}</span>
+          <span class="text-xs text-gray-400">${time}</span>
+        </div>
+        ${replyQuote}
+        <div>${data.text} ${replyBtn}</div>
+      `;
+      // Auto-scroll if at bottom
+      chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    // Send message to the chat room
+    // Send Message Function with optional reply and file attachment support
     function sendMessage(e) {
       e.preventDefault();
-      const input = document.getElementById("msgInput");
-      const text = input.value.trim();
-      if (!text) return;
+      const text = msgInput.value.trim();
+      if (!text && !pendingFile) return;
       const alias = sessionStorage.getItem("alias") || "Anonymous";
-      // Publish message in GunDB
-      chat.set({
+      let message = {
         alias: alias,
         text: text,
         timestamp: new Date().getTime()
-      });
-      input.value = "";
+      };
+      if (replyTo) {
+        message.replyTo = replyTo;
+        message.replyText = document.getElementById(replyTo + "_text") ? document.getElementById(replyTo + "_text").innerText : "";
+      }
+      if (pendingFile) {
+        message.file = pendingFile; // base64 string from file
+        message.fileType = pendingFileType;
+        pendingFile = null;
+        pendingFileType = null;
+      }
+      let chatNode = (currentChatMode === "private" && privateTarget) ? chatNodes.private : chatNodes[currentChatMode];
+      chatNode.set(message);
+      msgInput.value = "";
+      clearReply();
+      hideEmojiPicker();
     }
+
+    // File attachment handling
+    let pendingFile = null;
+    let pendingFileType = null;
+    function handleFile(files) {
+      if (!files.length) return;
+      const file = files[0];
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        pendingFile = e.target.result;
+        pendingFileType = file.type;
+        alert("File attached.");
+      }
+      reader.readAsDataURL(file);
+    }
+
+    // Delete a message (only if owned by user)
+    function deleteMessage(key) {
+      const currentAlias = sessionStorage.getItem("alias");
+      if (confirm("Are you sure you want to delete this message?")) {
+        // For deletion, we simply set message as null.
+        let chatNode = (currentChatMode === "private" && privateTarget) ? chatNodes.private : chatNodes[currentChatMode];
+        chatNode.get(key).put(null);
+      }
+    }
+
+    // Typing indicator (simple implementation)
+    let typingTimeout;
+    msgInput.addEventListener('input', () => {
+      sendTypingStatus();
+      clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(() => {
+        sendTypingStatus(false);
+      }, 2000);
+    });
+    function sendTypingStatus(isTyping = true) {
+      const alias = sessionStorage.getItem("alias");
+      // We'll use a separate Gun node for typing status per chat mode:
+      const typingNode = gun.get("typing-status-" + currentChatMode);
+      typingNode.put({ alias, typing: isTyping, timestamp: new Date().getTime() });
+    }
+    // Listen for typing status updates:
+    gun.get("typing-status-" + currentChatMode).map().on(data => {
+      if (!data) {
+        typingIndicator.classList.add("hidden");
+        return;
+      }
+      if (data.alias !== sessionStorage.getItem("alias") && data.typing) {
+        typingIndicator.textContent = data.alias + " is typing...";
+        typingIndicator.classList.remove("hidden");
+        setTimeout(() => { typingIndicator.classList.add("hidden"); }, 1500);
+      }
+    });
+
+    // Emoji picker functions
+    function toggleEmojiPicker() {
+      emojiPicker.classList.toggle("hidden");
+    }
+    function hideEmojiPicker() {
+      emojiPicker.classList.add("hidden");
+    }
+    function insertEmoji(emoji) {
+      msgInput.value += emoji;
+      hideEmojiPicker();
+    }
+
+    // Reply functionality
+    function setReply(key, text) {
+      replyTo = key;
+      replyPreview.textContent = "Replying to: " + text;
+      clearReplyBtn.classList.remove("hidden");
+    }
+    function clearReply() {
+      replyTo = null;
+      replyPreview.textContent = "";
+      clearReplyBtn.classList.add("hidden");
+    }
+
+    // Chat mode change handler
+    chatModeSelect.addEventListener("change", function() {
+      currentChatMode = this.value;
+      // Show/hide private target input:
+      if(currentChatMode === "private") {
+        privateTargetInput.classList.remove("hidden");
+      } else {
+        privateTargetInput.classList.add("hidden");
+      }
+      subscribeToChat();
+    });
+    privateTargetInput.addEventListener("input", function() {
+      privateTarget = this.value.trim();
+      subscribeToChat();
+    });
 
     // Auto-login if session exists
     window.onload = () => {
