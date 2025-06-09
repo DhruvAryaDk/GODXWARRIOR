@@ -1,501 +1,400 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fully Advanced Global Chat App</title>
-  <!-- GunDB Core and SEA for auth -->
-  <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body { background: #1a202c; font-family: 'Segoe UI', sans-serif; }
-    /* Chat messages scrollbar */
-    #chatMessages {
-      scrollbar-width: thin;
-      scrollbar-color: #4a5568 transparent;
-    }
-    #chatMessages::-webkit-scrollbar { width: 8px; }
-    #chatMessages::-webkit-scrollbar-track { background: transparent; }
-    #chatMessages::-webkit-scrollbar-thumb {
-      background-color: #4a5568;
-      border-radius: 4px;
-    }
-    /* Emoji picker style */
-    .emoji-picker span {
-      cursor: pointer;
-      font-size: 1.25rem;
-      padding: 4px;
-    }
-    /* GIF result thumbnails */
-    .gif-thumb { width: 80px; height: 80px; object-fit: cover; cursor: pointer; margin: 2px; border: 1px solid #4a5568; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Live Number Scanner</title>
+<style>
+  html, body {
+    margin:0; padding:0;
+    width:100%; height:100%;
+    background: black;
+    overflow: hidden;
+    font-family: sans-serif;
+  }
+  video {
+    position: absolute;
+    top:0; left:0;
+    width:100%; height:100%;
+    object-fit: cover;
+    z-index: 1;
+  }
+  #scanBox {
+    border: 3px solid red;
+    position: absolute;
+    top: 30%;
+    left: 30%;
+    width: 200px;
+    height: 100px;
+    z-index: 2;
+    touch-action: none;
+    background: rgba(255,0,0,0.1);
+  }
+  #controlsPanel {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(255,255,255,0.9);
+    border-radius: 10px;
+    padding: 10px;
+    width: 200px;
+    box-sizing: border-box;
+    z-index: 3;
+    display: none;
+  }
+  #toggleControls {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 4;
+    padding: 8px 15px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: none;
+    background: #e33;
+    color: white;
+    cursor: pointer;
+    user-select: none;
+  }
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #111;
+  }
+  input[type=number] {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 6px;
+    font-size: 14px;
+  }
+  #startScan {
+    margin-top: 10px;
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    background: #44a;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  #startScan:disabled {
+    background: #999;
+    cursor: not-allowed;
+  }
+  .handle {
+    width: 20px;
+    height: 20px;
+    background: red;
+    position: absolute;
+    z-index: 5;
+    touch-action: none;
+  }
+  .top-left { left: -10px; top: -10px; cursor: nwse-resize; }
+  .bottom-right { right: -10px; bottom: -10px; cursor: nwse-resize; }
+</style>
 </head>
-<body class="min-h-screen text-gray-100">
-  <!-- Main Container -->
-  <div class="container mx-auto p-4">
-    <!-- Header with Dark Mode Toggle, Search, and Online Count -->
-    <div class="flex justify-between items-center mb-4">
-      <div class="flex space-x-4 items-center">
-        <button id="darkModeToggle" class="bg-gray-600 hover:bg-gray-500 p-2 rounded">Toggle Dark Mode</button>
-        <input id="chatSearch" type="text" placeholder="Search messages..." class="p-2 rounded bg-gray-700 border border-gray-600" />
-      </div>
-      <div id="onlineCount" class="text-sm text-gray-400">Online: 0</div>
-    </div>
+<body>
 
-    <!-- Authentication Section -->
-    <div id="authSection" class="max-w-md mx-auto mb-6 p-4 bg-gray-800 rounded shadow-md">
-      <h2 class="text-xl font-bold mb-4 text-center">Login / Signup</h2>
-      <input id="username" type="text" placeholder="Username" class="w-full p-2 mb-2 rounded bg-gray-700 border border-gray-600" />
-      <input id="password" type="password" placeholder="Password" class="w-full p-2 mb-4 rounded bg-gray-700 border border-gray-600" />
-      <div class="flex justify-between">
-        <button onclick="signup()" class="w-1/2 bg-purple-600 hover:bg-purple-700 p-2 rounded mr-2">Signup</button>
-        <button onclick="login()" class="w-1/2 bg-blue-600 hover:bg-blue-700 p-2 rounded">Login</button>
-      </div>
-      <p id="authMessage" class="mt-3 text-center text-sm text-red-400"></p>
-    </div>
+<video id="video" autoplay muted playsinline></video>
 
-    <!-- Advanced Chat Container -->
-    <div id="mainChat" class="hidden max-w-6xl mx-auto bg-gray-800 rounded shadow-md">
-      <!-- Navigation & Participant List -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-700 p-4">
-        <div class="flex items-center space-x-3">
-          <img id="userAvatar" class="w-10 h-10 rounded-full border border-gray-600" src="" alt="Avatar" />
-          <h2 id="welcomeMsg" class="text-xl font-bold"></h2>
-          <span id="readReceipt" class="text-xs text-gray-400 hidden">(Read)</span>
-        </div>
-        <div class="flex items-center space-x-4">
-          <select id="chatMode" class="bg-gray-700 p-2 rounded border border-gray-600">
-            <option value="global">Global Chat</option>
-            <option value="group">Group Chat</option>
-            <option value="private">Private Chat</option>
-          </select>
-          <input id="privateTarget" type="text" placeholder="Target for Private" class="hidden bg-gray-700 p-2 rounded border border-gray-600" />
-          <button onclick="logout()" class="bg-red-600 hover:bg-red-700 p-2 rounded text-sm">Logout</button>
-        </div>
-      </div>
-      <!-- Online Participants List -->
-      <div id="onlineList" class="p-2 text-sm text-gray-400 border-b border-gray-700">Participants: <span id="onlineNames"></span></div>
-      <!-- Chat Messages Area -->
-      <div id="chatMessages" class="p-4 h-[50vh] overflow-y-auto space-y-3 relative">
-        <!-- Typing Indicator -->
-        <div id="typingIndicator" class="absolute bottom-0 left-0 p-2 text-sm text-gray-400 hidden"></div>
-      </div>
-      <!-- GIF/Sticker Picker Panel -->
-      <div id="gifPanel" class="hidden p-2 bg-gray-700 rounded mb-2">
-        <input id="gifSearch" type="text" placeholder="Search GIFs..." class="p-2 rounded bg-gray-600 border border-gray-500 mb-2 w-full" />
-        <div id="gifResults" class="flex flex-wrap"></div>
-      </div>
-      <!-- Message Input Area -->
-      <div class="border-t border-gray-700 p-4">
-        <div class="mb-2 flex items-center">
-          <button onclick="toggleEmojiPicker()" class="bg-gray-600 hover:bg-gray-500 p-2 rounded text-xl mr-2">😊</button>
-          <button onclick="toggleGifPanel()" class="bg-gray-600 hover:bg-gray-500 p-2 rounded text-sm mr-2">GIF</button>
-          <input id="fileInput" type="file" class="hidden" onchange="handleFile(this.files)" />
-          <button onclick="document.getElementById('fileInput').click()" class="bg-gray-600 hover:bg-gray-500 p-2 rounded text-sm mr-2">Attach</button>
-          <button onclick="insertMention()" class="bg-gray-600 hover:bg-gray-500 p-2 rounded text-sm mr-2">@</button>
-          <span id="replyPreview" class="text-sm italic text-gray-400"></span>
-          <button onclick="clearReply()" class="text-gray-400 ml-2 hidden" id="clearReplyBtn">Clear Reply</button>
-        </div>
-        <!-- Emoji Picker -->
-        <div id="emojiPicker" class="emoji-picker hidden bg-gray-700 p-2 rounded mb-2">
-          <span onclick="insertEmoji('😀')">😀</span>
-          <span onclick="insertEmoji('😁')">😁</span>
-          <span onclick="insertEmoji('😂')">😂</span>
-          <span onclick="insertEmoji('🤣')">🤣</span>
-          <span onclick="insertEmoji('😊')">😊</span>
-          <span onclick="insertEmoji('😍')">😍</span>
-          <span onclick="insertEmoji('😎')">😎</span>
-          <span onclick="insertEmoji('👍')">👍</span>
-          <!-- More emojis can be added here -->
-        </div>
-        <form id="msgForm" class="flex" onsubmit="sendMessage(event)">
-          <input id="msgInput" type="text" placeholder="Type a message..." class="flex-1 p-2 rounded-l bg-gray-700 border border-gray-600" required />
-          <button type="submit" class="bg-blue-600 hover:bg-blue-700 p-2 rounded-r">Send</button>
-        </form>
-      </div>
-    </div>
-  </div>
+<div id="scanBox" tabindex="0" aria-label="Scan area">
+  <div class="handle top-left"></div>
+  <div class="handle bottom-right"></div>
+</div>
 
-  <!-- Audio element for message notifications -->
-  <audio id="msgSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" preload="auto"></audio>
+<button id="toggleControls" aria-pressed="false" aria-controls="controlsPanel">Show Controls</button>
 
-  <script>
-    /**********************
-      INITIALIZATION & GLOBALS
-    **********************/
-    // Use your own relay for optimal performance. Here we fallback to gun-manhattan.
-    const gun = Gun({
-      peers: ['https://gun-manhattan.herokuapp.com/gun'],
-      localStorage: false,
-      radisk: true
-    });
-    const gunUser = gun.user();
+<div id="controlsPanel" role="region" aria-hidden="true">
+  <label for="startRange">Start Number (inclusive):</label>
+  <input type="number" id="startRange" placeholder="e.g. 100" />
+  
+  <label for="endRange">End Number (inclusive):</label>
+  <input type="number" id="endRange" placeholder="e.g. 999" />
+  
+  <button id="startScan">Start Scanning</button>
+  <button id="stopScan" disabled style="margin-top:8px; background:#a44;">Stop Scanning</button>
+</div>
 
-    // Chat Nodes for each mode.
-    const chatNodes = {
-      global: gun.get("advanced-chat-global"),
-      group: gun.get("advanced-chat-group"),
-      private: null // to be set dynamically based on target
-    };
+<audio id="alertSound" src="1.mp3" preload="auto"></audio>
 
-    let currentChatMode = "global";
-    let privateTarget = null;
-    let replyTo = null;
-    let renderedMessages = new Set();
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.5/dist/tesseract.min.js"></script>
+<script>
+(() => {
+  const video = document.getElementById("video");
+  const scanBox = document.getElementById("scanBox");
+  const alertSound = document.getElementById("alertSound");
+  const toggleControlsBtn = document.getElementById("toggleControls");
+  const controlsPanel = document.getElementById("controlsPanel");
+  const startScanBtn = document.getElementById("startScan");
+  const stopScanBtn = document.getElementById("stopScan");
+  const startInput = document.getElementById("startRange");
+  const endInput = document.getElementById("endRange");
 
-    // For file attachments
-    let pendingFile = null, pendingFileType = null;
+  let scanning = false;
+  let rangeStart = 0, rangeEnd = 0;
+  let scanInterval = null;
 
-    // DOM Elements
-    const authSection = document.getElementById("authSection");
-    const mainChat = document.getElementById("mainChat");
-    const authMessage = document.getElementById("authMessage");
-    const welcomeMsg = document.getElementById("welcomeMsg");
-    const userAvatar = document.getElementById("userAvatar");
-    const chatModeSelect = document.getElementById("chatMode");
-    const privateTargetInput = document.getElementById("privateTarget");
-    const chatMessages = document.getElementById("chatMessages");
-    const typingIndicator = document.getElementById("typingIndicator");
-    const msgInput = document.getElementById("msgInput");
-    const emojiPicker = document.getElementById("emojiPicker");
-    const replyPreview = document.getElementById("replyPreview");
-    const clearReplyBtn = document.getElementById("clearReplyBtn");
-    const darkModeToggle = document.getElementById("darkModeToggle");
-    const chatSearch = document.getElementById("chatSearch");
-    const onlineCount = document.getElementById("onlineCount");
-    const onlineList = document.getElementById("onlineList");
-    const onlineNames = document.getElementById("onlineNames");
-    const gifPanel = document.getElementById("gifPanel");
-    const gifSearch = document.getElementById("gifSearch");
-    const gifResults = document.getElementById("gifResults");
-    const msgSound = document.getElementById("msgSound");
-    
-    /**********************
-      USER AUTHENTICATION
-    **********************/
-    function signup() {
-      const alias = document.getElementById("username").value.trim();
-      const pass = document.getElementById("password").value;
-      if (!alias || !pass) {
-        authMessage.textContent = "Enter a username and password.";
-        return;
-      }
-      gunUser.create(alias, pass, ack => {
-        if (ack.err) authMessage.textContent = "Signup Error: " + ack.err;
-        else authMessage.textContent = "Signup successful! Please log in.";
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  async function startCamera() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { exact: "environment" } },
+        audio: false
       });
+      video.srcObject = stream;
+      await new Promise(resolve => {
+        video.onloadedmetadata = () => resolve();
+      });
+      console.log("Camera started");
+    } catch (e) {
+      alert("Camera error: " + e.message);
     }
-    function login() {
-      const alias = document.getElementById("username").value.trim();
-      const pass = document.getElementById("password").value;
-      if (!alias || !pass) {
-        authMessage.textContent = "Enter your username and password.";
-        return;
-      }
-      gunUser.auth(alias, pass, ack => {
-        if (ack.err) authMessage.textContent = "Login Error: " + ack.err;
-        else {
-          sessionStorage.setItem("loggedIn", "true");
-          sessionStorage.setItem("alias", alias);
-          authMessage.textContent = "";
-          showChat(alias);
-          updateOnlineList();
+  }
+  startCamera();
+
+  // Toggle controls panel visibility
+  toggleControlsBtn.addEventListener("click", () => {
+    const visible = controlsPanel.style.display === "block";
+    if (visible) {
+      controlsPanel.style.display = "none";
+      toggleControlsBtn.textContent = "Show Controls";
+      toggleControlsBtn.setAttribute("aria-pressed", "false");
+      controlsPanel.setAttribute("aria-hidden", "true");
+    } else {
+      controlsPanel.style.display = "block";
+      toggleControlsBtn.textContent = "Hide Controls";
+      toggleControlsBtn.setAttribute("aria-pressed", "true");
+      controlsPanel.setAttribute("aria-hidden", "false");
+    }
+  });
+
+  // Start scanning function
+  startScanBtn.addEventListener("click", () => {
+    if (scanning) return; // Already scanning
+    rangeStart = parseInt(startInput.value);
+    rangeEnd = parseInt(endInput.value);
+    if (isNaN(rangeStart) || isNaN(rangeEnd)) {
+      alert("Please enter valid start and end numbers.");
+      return;
+    }
+    if (rangeStart > rangeEnd) {
+      alert("Start number must be less than or equal to end number.");
+      return;
+    }
+    scanning = true;
+    startScanBtn.disabled = true;
+    stopScanBtn.disabled = false;
+    alertSound.pause();
+    alertSound.currentTime = 0;
+    console.log(`Scanning started for numbers between ${rangeStart} and ${rangeEnd}`);
+    scanInterval = setInterval(scanOnce, 1000);
+  });
+
+  // Stop scanning function
+  stopScanBtn.addEventListener("click", () => {
+    if (!scanning) return;
+    scanning = false;
+    clearInterval(scanInterval);
+    startScanBtn.disabled = false;
+    stopScanBtn.disabled = true;
+    alertSound.pause();
+    alertSound.currentTime = 0;
+    console.log("Scanning stopped");
+  });
+
+  // Scan once function
+  async function scanOnce() {
+    if (!scanning) return;
+
+    const rect = scanBox.getBoundingClientRect();
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    if (!vw || !vh) {
+      console.log("Video metadata not ready yet.");
+      return;
+    }
+
+    const scaleX = vw / window.innerWidth;
+    const scaleY = vh / window.innerHeight;
+
+    const sx = rect.left * scaleX;
+    const sy = rect.top * scaleY;
+    const sw = rect.width * scaleX;
+    const sh = rect.height * scaleY;
+
+    if (sw <= 0 || sh <= 0) {
+      console.log("Invalid scan box size");
+      return;
+    }
+
+    canvas.width = sw;
+    canvas.height = sh;
+
+    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh);
+
+    try {
+      const { data: { text } } = await Tesseract.recognize(canvas, "eng", {
+        tessedit_char_whitelist: "0123456789",
+        // logger: m => console.log(m), // Uncomment to debug Tesseract progress
+      });
+      // Extract numbers and parse integers
+      const matches = [...text.matchAll(/\d+/g)].map(m => parseInt(m[0], 10));
+      if (matches.length) {
+        console.log("Detected numbers:", matches);
+        const found = matches.find(n => n >= rangeStart && n <= rangeEnd);
+        if (found !== undefined) {
+          scanning = false;
+          clearInterval(scanInterval);
+          startScanBtn.disabled = false;
+          stopScanBtn.disabled = true;
+          alertSound.loop = true;
+          alertSound.play();
+          alert(`Detected number: ${found}`);
+          console.log(`Detected number: ${found}`);
         }
-      });
-    }
-    function logout() {
-      gunUser.leave();
-      sessionStorage.clear();
-      location.reload();
-    }
-    function showChat(alias) {
-      authSection.style.display = "none";
-      mainChat.classList.remove("hidden");
-      welcomeMsg.textContent = "Hello, " + alias + "!";
-      userAvatar.src = "https://avatars.dicebear.com/api/initials/" + encodeURIComponent(alias) + ".svg";
-      subscribeToChat();
-      // Register online status
-      updateOnlineStatus(true);
-    }
-    
-    /**********************
-      CHAT SUBSCRIPTION & RENDERING
-    **********************/
-    function subscribeToChat() {
-      let chatNode = chatNodes[currentChatMode];
-      if (currentChatMode === "private" && privateTarget) {
-        const alias = sessionStorage.getItem("alias");
-        let room = [alias, privateTarget].sort().join("-");
-        chatNodes.private = gun.get("advanced-chat-private-" + room);
-        chatNode = chatNodes.private;
       }
-      renderedMessages.clear();
-      chatMessages.innerHTML = "";
-      chatNode.map().on((data, key) => {
-        if (!renderedMessages.has(key)) {
-          renderMessage(data, key);
-          renderedMessages.add(key);
-          // Play sound for new incoming messages (if not sent by self)
-          if (data && data.alias !== sessionStorage.getItem("alias")) {
-            msgSound.play().catch(()=>{}); // catch autoplay errors
-          }
-        }
-      });
+    } catch (err) {
+      console.error("OCR error:", err);
     }
-    function renderMessage(data, key) {
-      if (!data || !data.text) return;
-      let msgEl = document.getElementById(key);
-      if (!msgEl) {
-        msgEl = document.createElement("div");
-        msgEl.id = key;
-        msgEl.className = "p-2 rounded bg-gray-700 relative";
-        chatMessages.appendChild(msgEl);
-      }
-      const time = data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : "";
-      let replyQuote = "";
-      if (data.replyTo) {
-        replyQuote = `<div class="border-l-2 border-gray-500 pl-2 text-xs text-gray-400 mb-1">Replying to: ${data.replyText || ""}</div>`;
-      }
-      // Reaction display (if any)
-      let reactionDisplay = data.reaction ? `<span class="text-xl ml-2">${data.reaction}</span>` : "";
-      const currentAlias = sessionStorage.getItem("alias");
-      const deleteBtn = (data.alias === currentAlias) ? `<button onclick="deleteMessage('${key}')" class="absolute top-1 right-1 text-xs text-red-400">Delete</button>` : "";
-      const replyBtn = `<button onclick="setReply('${key}','${data.text.replace(/'/g, "\\'")}')" class="text-xs text-blue-400 ml-2">Reply</button>`;
-      const editBtn = (data.alias === currentAlias) ? `<button onclick="editMessage('${key}','${data.text.replace(/'/g, "\\'")}')" class="text-xs text-yellow-400 ml-2">Edit</button>` : "";
-      const reactionBtn = `<button onclick="addReaction('${key}')" class="text-xs text-green-400 ml-2">React</button>`;
-      msgEl.innerHTML = `
-        <div>${deleteBtn}</div>
-        <div>
-          <img class="inline-block w-6 h-6 rounded-full mr-2" src="https://avatars.dicebear.com/api/initials/${encodeURIComponent(data.alias)}.svg" alt="avatar" />
-          <span class="font-bold">${data.alias}</span>
-          <span class="text-xs text-gray-400">${time}</span>
-        </div>
-        ${replyQuote}
-        <div>${data.text} ${reactionDisplay} ${replyBtn} ${editBtn} ${reactionBtn}</div>
-      `;
-      // If message contains file (image), display preview
-      if (data.file && data.fileType && data.fileType.startsWith("image/")) {
-        let img = document.createElement("img");
-        img.src = data.file;
-        img.className = "mt-2 rounded max-w-xs";
-        msgEl.appendChild(img);
-      }
-      chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-    
-    /**********************
-      MESSAGE SENDING & FILE HANDLING
-    **********************/
-    function sendMessage(e) {
+  }
+
+  // Dragging and resizing (touch and mouse support)
+  (() => {
+    let dragOffset = { x: 0, y: 0 };
+    let isDragging = false;
+    let resizing = false;
+    let resizeHandle = null;
+    let resizeStart = {};
+
+    // Helpers
+    function clamp(val, min, max) { return Math.min(Math.max(val, min), max); }
+
+    // Drag start
+    scanBox.addEventListener("mousedown", dragStart);
+    scanBox.addEventListener("touchstart", dragStart, { passive: false });
+
+    function dragStart(e) {
+      if (e.target.classList.contains("handle")) return;
       e.preventDefault();
-      const text = msgInput.value.trim();
-      if (!text && !pendingFile) return;
-      const alias = sessionStorage.getItem("alias") || "Anonymous";
-      let message = {
-        alias: alias,
-        text: text,
-        timestamp: new Date().getTime(),
-        read: false // for read receipts
+      isDragging = true;
+      const rect = scanBox.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      dragOffset.x = clientX - rect.left;
+      dragOffset.y = clientY - rect.top;
+      window.addEventListener("mousemove", dragging);
+      window.addEventListener("mouseup", dragEnd);
+      window.addEventListener("touchmove", dragging, { passive: false });
+      window.addEventListener("touchend", dragEnd);
+    }
+
+    function dragging(e) {
+      if (!isDragging) return;
+      e.preventDefault();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      let newLeft = clientX - dragOffset.x;
+      let newTop = clientY - dragOffset.y;
+      // Clamp inside viewport
+      newLeft = clamp(newLeft, 0, window.innerWidth - scanBox.offsetWidth);
+      newTop = clamp(newTop, 0, window.innerHeight - scanBox.offsetHeight);
+      scanBox.style.left = `${newLeft}px`;
+      scanBox.style.top = `${newTop}px`;
+    }
+
+    function dragEnd(e) {
+      isDragging = false;
+      window.removeEventListener("mousemove", dragging);
+      window.removeEventListener("mouseup", dragEnd);
+      window.removeEventListener("touchmove", dragging);
+      window.removeEventListener("touchend", dragEnd);
+    }
+
+    // Resize start
+    const topLeftHandle = scanBox.querySelector(".top-left");
+    const bottomRightHandle = scanBox.querySelector(".bottom-right");
+
+    topLeftHandle.addEventListener("mousedown", resizeStartFn);
+    topLeftHandle.addEventListener("touchstart", resizeStartFn, { passive: false });
+    bottomRightHandle.addEventListener("mousedown", resizeStartFn);
+    bottomRightHandle.addEventListener("touchstart", resizeStartFn, { passive: false });
+
+    function resizeStartFn(e) {
+      e.preventDefault();
+      resizing = true;
+      resizeHandle = e.target;
+      const rect = scanBox.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      resizeStart = {
+        startX: clientX,
+        startY: clientY,
+        width: rect.width,
+        height: rect.height,
+        left: rect.left,
+        top: rect.top
       };
-      if (replyTo) {
-        message.replyTo = replyTo;
-        message.replyText = document.getElementById(replyTo + "_text") ? document.getElementById(replyTo + "_text").innerText : "";
-      }
-      if (pendingFile) {
-        message.file = pendingFile;
-        message.fileType = pendingFileType;
-        pendingFile = null;
-        pendingFileType = null;
-      }
-      let chatNode = (currentChatMode === "private" && privateTarget) ? chatNodes.private : chatNodes[currentChatMode];
-      let messageKey = "msg_" + new Date().getTime() + "_" + Math.random().toString(36).substring(2, 8);
-      chatNode.get(messageKey).put(message);
-      msgInput.value = "";
-      clearReply();
-      hideEmojiPicker();
+      window.addEventListener("mousemove", resizingFn);
+      window.addEventListener("mouseup", resizeEndFn);
+      window.addEventListener("touchmove", resizingFn, { passive: false });
+      window.addEventListener("touchend", resizeEndFn);
     }
-    function handleFile(files) {
-      if (!files.length) return;
-      const file = files[0];
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        pendingFile = e.target.result;
-        pendingFileType = file.type;
-        alert("File attached!");
-      }
-      reader.readAsDataURL(file);
-    }
-    function deleteMessage(key) {
-      if (confirm("Delete this message permanently?")) {
-        let chatNode = (currentChatMode === "private" && privateTarget) ? chatNodes.private : chatNodes[currentChatMode];
-        chatNode.get(key).put(null);
-      }
-    }
-    // Edit message: prompts user to input new text and updates the message in Gun.
-    function editMessage(key, oldText) {
-      const newText = prompt("Edit your message:", oldText);
-      if (newText !== null && newText.trim() !== "") {
-        let chatNode = (currentChatMode === "private" && privateTarget) ? chatNodes.private : chatNodes[currentChatMode];
-        chatNode.get(key).put({ text: newText, edited: true, timestamp: new Date().getTime() });
-      }
-    }
-    // Add simple reaction: prompt user for an emoji.
-    function addReaction(key) {
-      const reaction = prompt("Enter your reaction emoji (e.g., 👍, 😂):");
-      if (reaction) {
-        let chatNode = (currentChatMode === "private" && privateTarget) ? chatNodes.private : chatNodes[currentChatMode];
-        chatNode.get(key).put({ reaction: reaction });
-      }
-    }
-    
-    /**********************
-      TYPING INDICATOR
-    **********************/
-    let typingTimeout;
-    msgInput.addEventListener('input', () => {
-      sendTypingStatus();
-      clearTimeout(typingTimeout);
-      typingTimeout = setTimeout(() => { sendTypingStatus(false); }, 2000);
-    });
-    function sendTypingStatus(isTyping = true) {
-      const alias = sessionStorage.getItem("alias");
-      const typingNode = gun.get("typing-status-" + currentChatMode);
-      typingNode.put({ alias, typing: isTyping, timestamp: new Date().getTime() });
-    }
-    gun.get("typing-status-" + currentChatMode).map().on(data => {
-      if (!data) { typingIndicator.classList.add("hidden"); return; }
-      if (data.alias !== sessionStorage.getItem("alias") && data.typing) {
-        typingIndicator.textContent = data.alias + " is typing...";
-        typingIndicator.classList.remove("hidden");
-        setTimeout(() => { typingIndicator.classList.add("hidden"); }, 1500);
-      }
-    });
-    
-    /**********************
-      EMOJI PICKER & GIF/STICKER INTEGRATION
-    **********************/
-    function toggleEmojiPicker() { emojiPicker.classList.toggle("hidden"); }
-    function hideEmojiPicker() { emojiPicker.classList.add("hidden"); }
-    function insertEmoji(emoji) { msgInput.value += emoji; hideEmojiPicker(); }
-    
-    // Toggle GIF Panel for searching GIFs via GIPHY
-    function toggleGifPanel() {
-      gifPanel.classList.toggle("hidden");
-    }
-    async function searchGifs(query) {
-      const apiKey = "dc6zaTOxFJmzC";  // Demo API key; get your own key for production
-      const res = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=${apiKey}&q=${encodeURIComponent(query)}&limit=9`);
-      const json = await res.json();
-      return json.data;
-    }
-    gifSearch.addEventListener("input", async function() {
-      const query = this.value.trim();
-      gifResults.innerHTML = "";
-      if (!query) return;
-      const gifs = await searchGifs(query);
-      gifs.forEach(gif => {
-        let img = document.createElement("img");
-        img.src = gif.images.fixed_height_small.url;
-        img.className = "gif-thumb";
-        img.onclick = () => { 
-          msgInput.value += " " + gif.images.fixed_height_small.url + " "; 
-          gifPanel.classList.add("hidden"); 
-        };
-        gifResults.appendChild(img);
-      });
-    });
-    
-    /**********************
-      REPLY & MENTIONS
-    **********************/
-    function setReply(key, text) {
-      replyTo = key;
-      replyPreview.textContent = "Replying to: " + text;
-      clearReplyBtn.classList.remove("hidden");
-    }
-    function clearReply() {
-      replyTo = null;
-      replyPreview.textContent = "";
-      clearReplyBtn.classList.add("hidden");
-    }
-    function insertMention() {
-      const alias = prompt("Mention user (type username):");
-      if (alias) msgInput.value += " @" + alias + " ";
-    }
-    
-    /**********************
-      CHAT MODE & PRIVATE CHAT
-    **********************/
-    chatModeSelect.addEventListener("change", function() {
-      currentChatMode = this.value;
-      if (currentChatMode === "private") {
-        privateTargetInput.classList.remove("hidden");
-      } else {
-        privateTargetInput.classList.add("hidden");
-      }
-      subscribeToChat();
-    });
-    privateTargetInput.addEventListener("input", function() {
-      privateTarget = this.value.trim();
-      subscribeToChat();
-    });
-    
-    /**********************
-      SEARCH MESSAGES
-    **********************/
-    chatSearch.addEventListener("input", function() {
-      let query = this.value.toLowerCase();
-      Array.from(chatMessages.children).forEach(msgEl => {
-        msgEl.style.display = msgEl.innerText.toLowerCase().includes(query) ? "" : "none";
-      });
-    });
-    
-    /**********************
-      ONLINE PARTICIPANTS
-      (Simulated via GunDB: on login, update an "online" node)
-    **********************/
-    function updateOnlineStatus(isOnline) {
-      const alias = sessionStorage.getItem("alias");
-      gun.get("online-users").get(alias).put({ alias, online: isOnline, timestamp: new Date().getTime() });
-      // Update online list every few seconds
-      setInterval(() => {
-        gun.get("online-users").map().once((data, key) => {
-          // Show users updated in the last 60 seconds as online
-          if (data && (new Date().getTime() - data.timestamp < 60000)) updateOnlineList();
-        });
-      }, 10000);
-    }
-    function updateOnlineList() {
-      let names = [];
-      gun.get("online-users").map().once((data) => {
-        if (data && (new Date().getTime() - data.timestamp < 60000)) {
-          names.push(data.alias);
+
+    function resizingFn(e) {
+      if (!resizing) return;
+      e.preventDefault();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const dx = clientX - resizeStart.startX;
+      const dy = clientY - resizeStart.startY;
+
+      if (resizeHandle === bottomRightHandle) {
+        let newWidth = resizeStart.width + dx;
+        let newHeight = resizeStart.height + dy;
+        newWidth = clamp(newWidth, 50, window.innerWidth - resizeStart.left);
+        newHeight = clamp(newHeight, 30, window.innerHeight - resizeStart.top);
+        scanBox.style.width = newWidth + "px";
+        scanBox.style.height = newHeight + "px";
+      } else if (resizeHandle === topLeftHandle) {
+        let newLeft = resizeStart.left + dx;
+        let newTop = resizeStart.top + dy;
+        let newWidth = resizeStart.width - dx;
+        let newHeight = resizeStart.height - dy;
+
+        // Clamp values to viewport and minimum size
+        if (newWidth < 50) {
+          newWidth = 50;
+          newLeft = resizeStart.left + (resizeStart.width - 50);
         }
-        onlineNames.textContent = names.join(", ");
-        onlineCount.textContent = "Online: " + names.length;
-      });
-    }
-    
-    /**********************
-      DARK MODE TOGGLE
-    **********************/
-    darkModeToggle.addEventListener("click", () => {
-      document.body.classList.toggle("dark");
-      // Toggle background colors for key elements
-      // (For brevity, using Tailwind's dark mode classes in production is recommended.)
-    });
-    
-    /**********************
-      AUTO-LOGIN & INIT
-    **********************/
-    window.onload = () => {
-      if (sessionStorage.getItem("loggedIn")) {
-        const alias = sessionStorage.getItem("alias");
-        showChat(alias);
+        if (newHeight < 30) {
+          newHeight = 30;
+          newTop = resizeStart.top + (resizeStart.height - 30);
+        }
+        newLeft = clamp(newLeft, 0, resizeStart.left + resizeStart.width - 50);
+        newTop = clamp(newTop, 0, resizeStart.top + resizeStart.height - 30);
+
+        scanBox.style.left = newLeft + "px";
+        scanBox.style.top = newTop + "px";
+        scanBox.style.width = newWidth + "px";
+        scanBox.style.height = newHeight + "px";
       }
-    };
-  </script>
+    }
+
+    function resizeEndFn(e) {
+      resizing = false;
+      resizeHandle = null;
+      window.removeEventListener("mousemove", resizingFn);
+      window.removeEventListener("mouseup", resizeEndFn);
+      window.removeEventListener("touchmove", resizingFn);
+      window.removeEventListener("touchend", resizeEndFn);
+    }
+  })();
+})();
+</script>
+
 </body>
 </html>
