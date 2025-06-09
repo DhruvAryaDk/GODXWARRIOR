@@ -1,400 +1,485 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" >
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Live Number Scanner</title>
-<style>
-  html, body {
-    margin:0; padding:0;
-    width:100%; height:100%;
-    background: black;
-    overflow: hidden;
-    font-family: sans-serif;
-  }
-  video {
-    position: absolute;
-    top:0; left:0;
-    width:100%; height:100%;
-    object-fit: cover;
-    z-index: 1;
-  }
-  #scanBox {
-    border: 3px solid red;
-    position: absolute;
-    top: 30%;
-    left: 30%;
-    width: 200px;
-    height: 100px;
-    z-index: 2;
-    touch-action: none;
-    background: rgba(255,0,0,0.1);
-  }
-  #controlsPanel {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    background: rgba(255,255,255,0.9);
-    border-radius: 10px;
-    padding: 10px;
-    width: 200px;
-    box-sizing: border-box;
-    z-index: 3;
-    display: none;
-  }
-  #toggleControls {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    z-index: 4;
-    padding: 8px 15px;
-    font-size: 16px;
-    border-radius: 8px;
-    border: none;
-    background: #e33;
-    color: white;
-    cursor: pointer;
-    user-select: none;
-  }
-  label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
-    color: #111;
-  }
-  input[type=number] {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 6px;
-    font-size: 14px;
-  }
-  #startScan {
-    margin-top: 10px;
-    width: 100%;
-    padding: 10px;
-    font-size: 16px;
-    background: #44a;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-  }
-  #startScan:disabled {
-    background: #999;
-    cursor: not-allowed;
-  }
-  .handle {
-    width: 20px;
-    height: 20px;
-    background: red;
-    position: absolute;
-    z-index: 5;
-    touch-action: none;
-  }
-  .top-left { left: -10px; top: -10px; cursor: nwse-resize; }
-  .bottom-right { right: -10px; bottom: -10px; cursor: nwse-resize; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Peer-to-Peer Video Call + Global Chat (Gun.js)</title>
+  <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+  <style>
+    /* Reset */
+    * {
+      box-sizing: border-box;
+      margin: 0; padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    body {
+      background: #121212;
+      color: #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+    }
+    h1 {
+      margin-bottom: 1rem;
+      font-weight: 700;
+      color: #00e676;
+      text-align: center;
+      user-select: none;
+    }
+    #videos {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+      width: 100%;
+      max-width: 900px;
+    }
+    video {
+      background: #000;
+      border-radius: 12px;
+      width: 45vw;
+      max-width: 420px;
+      aspect-ratio: 16/9;
+      box-shadow: 0 0 12px #00e676aa;
+    }
+    #controls {
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 1rem;
+    }
+    input[type=text], input[type=password] {
+      background: #222;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      color: #e0e0e0;
+      font-size: 1rem;
+      width: 100%;
+      transition: box-shadow 0.3s ease;
+    }
+    input[type=text]:focus, input[type=password]:focus {
+      outline: none;
+      box-shadow: 0 0 6px #00e676;
+    }
+    button {
+      background: #00e676;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      color: #121212;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      user-select: none;
+    }
+    button:hover:not(:disabled) {
+      background: #00c853;
+    }
+    button:disabled {
+      background: #555;
+      cursor: not-allowed;
+    }
+    #status {
+      min-height: 1.5em;
+      font-size: 0.9rem;
+      font-style: italic;
+      color: #888;
+      text-align: center;
+      user-select: none;
+      margin-bottom: 1rem;
+    }
+    #callControls {
+      display: none;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+    #callControls button {
+      width: 110px;
+    }
+    @media(max-width: 600px) {
+      video {
+        width: 90vw;
+      }
+      #callControls button {
+        width: 45vw;
+      }
+    }
+
+    /* Chat styles */
+    #chatContainer {
+      width: 100%;
+      max-width: 900px;
+      background: #222;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      height: 300px;
+      user-select: none;
+    }
+    #chatMessages {
+      flex-grow: 1;
+      overflow-y: auto;
+      padding: 12px;
+      font-size: 0.9rem;
+      color: #eee;
+      border-bottom: 1px solid #444;
+    }
+    #chatInputContainer {
+      display: flex;
+      padding: 10px;
+      gap: 10px;
+    }
+    #chatInput {
+      flex-grow: 1;
+      background: #333;
+      border: none;
+      border-radius: 8px;
+      padding: 10px;
+      color: #eee;
+      font-size: 1rem;
+    }
+    #chatInput:focus {
+      outline: none;
+      box-shadow: 0 0 6px #00e676;
+    }
+    #chatSendBtn {
+      background: #00e676;
+      border: none;
+      border-radius: 8px;
+      color: #121212;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 10px 16px;
+      transition: background 0.3s ease;
+      user-select: none;
+    }
+    #chatSendBtn:hover {
+      background: #00c853;
+    }
+  </style>
 </head>
 <body>
+  <h1>Peer-to-Peer Video Call + Global Chat</h1>
 
-<video id="video" autoplay muted playsinline></video>
+  <div id="videos">
+    <video id="localVideo" autoplay muted playsinline></video>
+    <video id="remoteVideo" autoplay playsinline></video>
+  </div>
 
-<div id="scanBox" tabindex="0" aria-label="Scan area">
-  <div class="handle top-left"></div>
-  <div class="handle bottom-right"></div>
-</div>
+  <div id="controls">
+    <input id="roomName" type="text" placeholder="Room Name (letters & numbers only)" pattern="[a-zA-Z0-9]+" required autocomplete="off" />
+    <input id="password" type="password" placeholder="Room Password" required autocomplete="off" />
+    <button id="createRoomBtn">Create Room</button>
+    <button id="joinRoomBtn">Join Room</button>
+  </div>
 
-<button id="toggleControls" aria-pressed="false" aria-controls="controlsPanel">Show Controls</button>
+  <div id="callControls">
+    <button id="toggleAudioBtn">Mute Mic</button>
+    <button id="toggleVideoBtn">Stop Video</button>
+    <button id="hangupBtn" style="background:#e53935;color:#fff;">Hang Up</button>
+  </div>
 
-<div id="controlsPanel" role="region" aria-hidden="true">
-  <label for="startRange">Start Number (inclusive):</label>
-  <input type="number" id="startRange" placeholder="e.g. 100" />
-  
-  <label for="endRange">End Number (inclusive):</label>
-  <input type="number" id="endRange" placeholder="e.g. 999" />
-  
-  <button id="startScan">Start Scanning</button>
-  <button id="stopScan" disabled style="margin-top:8px; background:#a44;">Stop Scanning</button>
-</div>
+  <p id="status"></p>
 
-<audio id="alertSound" src="1.mp3" preload="auto"></audio>
+  <!-- Global Chat Section -->
+  <div id="chatContainer">
+    <div id="chatMessages"></div>
+    <div id="chatInputContainer">
+      <input id="chatInput" placeholder="Type message here..." autocomplete="off" />
+      <button id="chatSendBtn">Send</button>
+    </div>
+  </div>
 
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.5/dist/tesseract.min.js"></script>
-<script>
-(() => {
-  const video = document.getElementById("video");
-  const scanBox = document.getElementById("scanBox");
-  const alertSound = document.getElementById("alertSound");
-  const toggleControlsBtn = document.getElementById("toggleControls");
-  const controlsPanel = document.getElementById("controlsPanel");
-  const startScanBtn = document.getElementById("startScan");
-  const stopScanBtn = document.getElementById("stopScan");
-  const startInput = document.getElementById("startRange");
-  const endInput = document.getElementById("endRange");
+  <script>
+    // Gun setup
+    const gun = Gun();
 
-  let scanning = false;
-  let rangeStart = 0, rangeEnd = 0;
-  let scanInterval = null;
+    // RTC config
+    const configuration = {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' }
+      ]
+    };
 
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
+    let localStream, pc, roomRef;
+    let audioEnabled = true;
+    let videoEnabled = true;
 
-  async function startCamera() {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { exact: "environment" } },
-        audio: false
-      });
-      video.srcObject = stream;
-      await new Promise(resolve => {
-        video.onloadedmetadata = () => resolve();
-      });
-      console.log("Camera started");
-    } catch (e) {
-      alert("Camera error: " + e.message);
-    }
-  }
-  startCamera();
+    // UI elements
+    const localVideo = document.getElementById('localVideo');
+    const remoteVideo = document.getElementById('remoteVideo');
+    const roomNameInput = document.getElementById('roomName');
+    const passwordInput = document.getElementById('password');
+    const createRoomBtn = document.getElementById('createRoomBtn');
+    const joinRoomBtn = document.getElementById('joinRoomBtn');
+    const statusEl = document.getElementById('status');
+    const callControls = document.getElementById('callControls');
+    const toggleAudioBtn = document.getElementById('toggleAudioBtn');
+    const toggleVideoBtn = document.getElementById('toggleVideoBtn');
+    const hangupBtn = document.getElementById('hangupBtn');
 
-  // Toggle controls panel visibility
-  toggleControlsBtn.addEventListener("click", () => {
-    const visible = controlsPanel.style.display === "block";
-    if (visible) {
-      controlsPanel.style.display = "none";
-      toggleControlsBtn.textContent = "Show Controls";
-      toggleControlsBtn.setAttribute("aria-pressed", "false");
-      controlsPanel.setAttribute("aria-hidden", "true");
-    } else {
-      controlsPanel.style.display = "block";
-      toggleControlsBtn.textContent = "Hide Controls";
-      toggleControlsBtn.setAttribute("aria-pressed", "true");
-      controlsPanel.setAttribute("aria-hidden", "false");
-    }
-  });
+    // Chat UI
+    const chatMessages = document.getElementById('chatMessages');
+    const chatInput = document.getElementById('chatInput');
+    const chatSendBtn = document.getElementById('chatSendBtn');
 
-  // Start scanning function
-  startScanBtn.addEventListener("click", () => {
-    if (scanning) return; // Already scanning
-    rangeStart = parseInt(startInput.value);
-    rangeEnd = parseInt(endInput.value);
-    if (isNaN(rangeStart) || isNaN(rangeEnd)) {
-      alert("Please enter valid start and end numbers.");
-      return;
-    }
-    if (rangeStart > rangeEnd) {
-      alert("Start number must be less than or equal to end number.");
-      return;
-    }
-    scanning = true;
-    startScanBtn.disabled = true;
-    stopScanBtn.disabled = false;
-    alertSound.pause();
-    alertSound.currentTime = 0;
-    console.log(`Scanning started for numbers between ${rangeStart} and ${rangeEnd}`);
-    scanInterval = setInterval(scanOnce, 1000);
-  });
+    // Global chat Gun node
+    const globalChatRef = gun.get('globalChat');
 
-  // Stop scanning function
-  stopScanBtn.addEventListener("click", () => {
-    if (!scanning) return;
-    scanning = false;
-    clearInterval(scanInterval);
-    startScanBtn.disabled = false;
-    stopScanBtn.disabled = true;
-    alertSound.pause();
-    alertSound.currentTime = 0;
-    console.log("Scanning stopped");
-  });
-
-  // Scan once function
-  async function scanOnce() {
-    if (!scanning) return;
-
-    const rect = scanBox.getBoundingClientRect();
-    const vw = video.videoWidth;
-    const vh = video.videoHeight;
-    if (!vw || !vh) {
-      console.log("Video metadata not ready yet.");
-      return;
-    }
-
-    const scaleX = vw / window.innerWidth;
-    const scaleY = vh / window.innerHeight;
-
-    const sx = rect.left * scaleX;
-    const sy = rect.top * scaleY;
-    const sw = rect.width * scaleX;
-    const sh = rect.height * scaleY;
-
-    if (sw <= 0 || sh <= 0) {
-      console.log("Invalid scan box size");
-      return;
-    }
-
-    canvas.width = sw;
-    canvas.height = sh;
-
-    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh);
-
-    try {
-      const { data: { text } } = await Tesseract.recognize(canvas, "eng", {
-        tessedit_char_whitelist: "0123456789",
-        // logger: m => console.log(m), // Uncomment to debug Tesseract progress
-      });
-      // Extract numbers and parse integers
-      const matches = [...text.matchAll(/\d+/g)].map(m => parseInt(m[0], 10));
-      if (matches.length) {
-        console.log("Detected numbers:", matches);
-        const found = matches.find(n => n >= rangeStart && n <= rangeEnd);
-        if (found !== undefined) {
-          scanning = false;
-          clearInterval(scanInterval);
-          startScanBtn.disabled = false;
-          stopScanBtn.disabled = true;
-          alertSound.loop = true;
-          alertSound.play();
-          alert(`Detected number: ${found}`);
-          console.log(`Detected number: ${found}`);
-        }
+    // Append message to chat box
+    function appendChatMessage(from, message, system = false) {
+      const el = document.createElement('div');
+      el.style.marginBottom = '6px';
+      el.style.wordBreak = 'break-word';
+      if(system) {
+        el.style.color = '#888';
+        el.style.fontStyle = 'italic';
+        el.textContent = `[System] ${message}`;
+      } else {
+        el.innerHTML = `<b>${from}:</b> ${message}`;
       }
-    } catch (err) {
-      console.error("OCR error:", err);
-    }
-  }
-
-  // Dragging and resizing (touch and mouse support)
-  (() => {
-    let dragOffset = { x: 0, y: 0 };
-    let isDragging = false;
-    let resizing = false;
-    let resizeHandle = null;
-    let resizeStart = {};
-
-    // Helpers
-    function clamp(val, min, max) { return Math.min(Math.max(val, min), max); }
-
-    // Drag start
-    scanBox.addEventListener("mousedown", dragStart);
-    scanBox.addEventListener("touchstart", dragStart, { passive: false });
-
-    function dragStart(e) {
-      if (e.target.classList.contains("handle")) return;
-      e.preventDefault();
-      isDragging = true;
-      const rect = scanBox.getBoundingClientRect();
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      dragOffset.x = clientX - rect.left;
-      dragOffset.y = clientY - rect.top;
-      window.addEventListener("mousemove", dragging);
-      window.addEventListener("mouseup", dragEnd);
-      window.addEventListener("touchmove", dragging, { passive: false });
-      window.addEventListener("touchend", dragEnd);
+      chatMessages.appendChild(el);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    function dragging(e) {
-      if (!isDragging) return;
-      e.preventDefault();
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      let newLeft = clientX - dragOffset.x;
-      let newTop = clientY - dragOffset.y;
-      // Clamp inside viewport
-      newLeft = clamp(newLeft, 0, window.innerWidth - scanBox.offsetWidth);
-      newTop = clamp(newTop, 0, window.innerHeight - scanBox.offsetHeight);
-      scanBox.style.left = `${newLeft}px`;
-      scanBox.style.top = `${newTop}px`;
+    // Listen for incoming global chat messages
+    globalChatRef.map().on(data => {
+      if(!data || !data.from || !data.message) return;
+      appendChatMessage(data.from, data.message, data.system);
+    });
+
+    // Send chat message
+    function sendChatMessage(message, system = false) {
+      if(!message.trim()) return;
+      const from = roomNameInput.value.trim() || 'Anon';
+      globalChatRef.set({
+        from,
+        message,
+        system: system || false,
+        timestamp: Date.now()
+      });
     }
 
-    function dragEnd(e) {
-      isDragging = false;
-      window.removeEventListener("mousemove", dragging);
-      window.removeEventListener("mouseup", dragEnd);
-      window.removeEventListener("touchmove", dragging);
-      window.removeEventListener("touchend", dragEnd);
+    chatSendBtn.onclick = () => {
+      const msg = chatInput.value.trim();
+      if(msg) {
+        sendChatMessage(msg);
+        chatInput.value = '';
+      }
+    };
+
+    chatInput.addEventListener('keydown', e => {
+      if(e.key === 'Enter') {
+        e.preventDefault();
+        chatSendBtn.click();
+      }
+    });
+
+    // Log status message on page
+    function logStatus(msg) {
+      statusEl.textContent = msg;
+      console.log(msg);
     }
 
-    // Resize start
-    const topLeftHandle = scanBox.querySelector(".top-left");
-    const bottomRightHandle = scanBox.querySelector(".bottom-right");
+    async function startLocalStream() {
+      try {
+        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        localVideo.srcObject = localStream;
+        logStatus('Camera and mic started.');
+      } catch (err) {
+        alert('Error accessing media devices: ' + err.message);
+        logStatus('Error accessing camera or mic.');
+      }
+    }
 
-    topLeftHandle.addEventListener("mousedown", resizeStartFn);
-    topLeftHandle.addEventListener("touchstart", resizeStartFn, { passive: false });
-    bottomRightHandle.addEventListener("mousedown", resizeStartFn);
-    bottomRightHandle.addEventListener("touchstart", resizeStartFn, { passive: false });
+    function createPeerConnection() {
+      pc = new RTCPeerConnection(configuration);
 
-    function resizeStartFn(e) {
-      e.preventDefault();
-      resizing = true;
-      resizeHandle = e.target;
-      const rect = scanBox.getBoundingClientRect();
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      resizeStart = {
-        startX: clientX,
-        startY: clientY,
-        width: rect.width,
-        height: rect.height,
-        left: rect.left,
-        top: rect.top
+      // Send ICE candidates to Gun and global chat
+      pc.onicecandidate = event => {
+        if (event.candidate) {
+          roomRef.get('iceCandidates').set({ candidate: event.candidate.toJSON() });
+          logStatus('Sent ICE candidate.');
+          sendChatMessage(`Sent ICE candidate`, true);
+        }
       };
-      window.addEventListener("mousemove", resizingFn);
-      window.addEventListener("mouseup", resizeEndFn);
-      window.addEventListener("touchmove", resizingFn, { passive: false });
-      window.addEventListener("touchend", resizeEndFn);
+
+      // When remote track received
+      pc.ontrack = event => {
+        if (remoteVideo.srcObject !== event.streams[0]) {
+          remoteVideo.srcObject = event.streams[0];
+          logStatus('Remote stream received.');
+          sendChatMessage(`Remote stream received`, true);
+        }
+      };
+
+      // Add all local tracks
+      localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
     }
 
-    function resizingFn(e) {
-      if (!resizing) return;
-      e.preventDefault();
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      const dx = clientX - resizeStart.startX;
-      const dy = clientY - resizeStart.startY;
-
-      if (resizeHandle === bottomRightHandle) {
-        let newWidth = resizeStart.width + dx;
-        let newHeight = resizeStart.height + dy;
-        newWidth = clamp(newWidth, 50, window.innerWidth - resizeStart.left);
-        newHeight = clamp(newHeight, 30, window.innerHeight - resizeStart.top);
-        scanBox.style.width = newWidth + "px";
-        scanBox.style.height = newHeight + "px";
-      } else if (resizeHandle === topLeftHandle) {
-        let newLeft = resizeStart.left + dx;
-        let newTop = resizeStart.top + dy;
-        let newWidth = resizeStart.width - dx;
-        let newHeight = resizeStart.height - dy;
-
-        // Clamp values to viewport and minimum size
-        if (newWidth < 50) {
-          newWidth = 50;
-          newLeft = resizeStart.left + (resizeStart.width - 50);
-        }
-        if (newHeight < 30) {
-          newHeight = 30;
-          newTop = resizeStart.top + (resizeStart.height - 30);
-        }
-        newLeft = clamp(newLeft, 0, resizeStart.left + resizeStart.width - 50);
-        newTop = clamp(newTop, 0, resizeStart.top + resizeStart.height - 30);
-
-        scanBox.style.left = newLeft + "px";
-        scanBox.style.top = newTop + "px";
-        scanBox.style.width = newWidth + "px";
-        scanBox.style.height = newHeight + "px";
+    async function createRoom() {
+      const room = roomNameInput.value.trim();
+      const pass = passwordInput.value.trim();
+      if (!room || !pass) {
+        alert('Please enter room name and password.');
+        return;
       }
+      if (!/^[a-zA-Z0-9]+$/.test(room)) {
+        alert('Room name must be letters and numbers only.');
+        return;
+      }
+
+      logStatus('Creating room...');
+      createRoomBtn.disabled = true;
+      joinRoomBtn.disabled = true;
+      roomRef = gun.get(room + '_' + pass);
+
+      await startLocalStream();
+      createPeerConnection();
+
+      // Clear old room data (best effort)
+      roomRef.put({});
+
+      // Create offer and send to Gun and global chat
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      roomRef.put({ offer: offer.toJSON() });
+
+      logStatus('Offer created and sent. Waiting for answer...');
+      sendChatMessage(`Room "${room}" created with offer sent. Waiting for answer...`, true);
+
+      // Listen for answer from joiner
+      roomRef.get('answer').on(async (answer) => {
+        if (!answer) return;
+        logStatus('Answer received! Setting remote description...');
+        sendChatMessage(`Answer received from joiner.`, true);
+        await pc.setRemoteDescription(new RTCSessionDescription(answer));
+        callControls.style.display = 'flex';
+      });
+
+      // Listen for remote ICE candidates
+      roomRef.get('iceCandidates').map().on(async (data) => {
+        if (!data || !data.candidate) return;
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+          logStatus('Added ICE candidate from remote.');
+          sendChatMessage(`Added ICE candidate from remote`, true);
+        } catch (e) {
+          console.warn('Failed to add ICE candidate:', e);
+        }
+      });
     }
 
-    function resizeEndFn(e) {
-      resizing = false;
-      resizeHandle = null;
-      window.removeEventListener("mousemove", resizingFn);
-      window.removeEventListener("mouseup", resizeEndFn);
-      window.removeEventListener("touchmove", resizingFn);
-      window.removeEventListener("touchend", resizeEndFn);
-    }
-  })();
-})();
-</script>
+    async function joinRoom() {
+      const room = roomNameInput.value.trim();
+      const pass = passwordInput.value.trim();
+      if (!room || !pass) {
+        alert('Please enter room name and password.');
+        return;
+      }
+      if (!/^[a-zA-Z0-9]+$/.test(room)) {
+        alert('Room name must be letters and numbers only.');
+        return;
+      }
 
+      logStatus('Joining room...');
+      createRoomBtn.disabled = true;
+      joinRoomBtn.disabled = true;
+      roomRef = gun.get(room + '_' + pass);
+
+      await startLocalStream();
+      createPeerConnection();
+
+      // Wait for offer from creator
+      roomRef.get('offer').once(async (offer) => {
+        if (!offer) {
+          alert('No offer found. Check room name and password.');
+          resetButtons();
+          return;
+        }
+        logStatus('Offer found, setting remote description...');
+        sendChatMessage(`Offer found from creator.`, true);
+        await pc.setRemoteDescription(new RTCSessionDescription(offer));
+
+        // Create answer and send to Gun and global chat
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        roomRef.put({ answer: answer.toJSON() });
+
+        logStatus('Answer sent! Waiting for ICE candidates...');
+        sendChatMessage(`Answer sent to creator.`, true);
+        callControls.style.display = 'flex';
+
+        // Listen for ICE candidates from creator
+        roomRef.get('iceCandidates').map().on(async (data) => {
+          if (!data || !data.candidate) return;
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+            logStatus('Added ICE candidate from remote.');
+            sendChatMessage(`Added ICE candidate from remote`, true);
+          } catch (e) {
+            console.warn('Failed to add ICE candidate:', e);
+          }
+        });
+      });
+    }
+
+    function toggleAudio() {
+      if (!localStream) return;
+      audioEnabled = !audioEnabled;
+      localStream.getAudioTracks().forEach(track => track.enabled = audioEnabled);
+      toggleAudioBtn.textContent = audioEnabled ? 'Mute Mic' : 'Unmute Mic';
+      sendChatMessage(`Microphone ${audioEnabled ? 'unmuted' : 'muted'}`, true);
+    }
+
+    function toggleVideo() {
+      if (!localStream) return;
+      videoEnabled = !videoEnabled;
+      localStream.getVideoTracks().forEach(track => track.enabled = videoEnabled);
+      toggleVideoBtn.textContent = videoEnabled ? 'Stop Video' : 'Start Video';
+      sendChatMessage(`Camera ${videoEnabled ? 'started' : 'stopped'}`, true);
+    }
+
+    function hangUp() {
+      if (pc) {
+        pc.close();
+        pc = null;
+      }
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localStream = null;
+      }
+      localVideo.srcObject = null;
+      remoteVideo.srcObject = null;
+      logStatus('Call ended.');
+      sendChatMessage(`Call ended.`, true);
+
+      resetButtons();
+      callControls.style.display = 'none';
+    }
+
+    function resetButtons() {
+      createRoomBtn.disabled = false;
+      joinRoomBtn.disabled = false;
+    }
+
+    // Attach event handlers
+    createRoomBtn.onclick = createRoom;
+    joinRoomBtn.onclick = joinRoom;
+    toggleAudioBtn.onclick = toggleAudio;
+    toggleVideoBtn.onclick = toggleVideo;
+    hangupBtn.onclick = hangUp;
+  </script>
 </body>
 </html>
