@@ -2,14 +2,181 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Earn with Direct Link</title>
+  <title>CSC Marksheet PDF Generator</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f4f4;
+      padding: 30px;
+    }
+    h2 {
+      text-align: center;
+      color: #004080;
+      margin-bottom: 20px;
+    }
+    label {
+      font-weight: bold;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 8px;
+      margin: 6px 0 12px;
+      font-size: 14px;
+    }
+    textarea {
+      height: 80px;
+    }
+    .btn {
+      padding: 10px 20px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .container {
+      max-width: 720px;
+      margin: auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    }
+  </style>
 </head>
 <body>
-  <h1>Welcome!</h1>
-  <p>Click below to continue:</p>
+  <div class="container">
+    <h2></h2>
 
-  <a href="https://otieu.com/4/9580698" target="_blank">
-    <button style="padding: 10px 20px; font-size: 16px;">Continue</button>
-  </a>
+    <label>Student Name:</label>
+    <input id="name" value="Dhruv Arya" />
+
+    <label>Roll Number:</label>
+    <input id="roll" value="1240577393" />
+
+    <label>Date of Birth:</label>
+    <input id="dob" value="22nd November 2008" />
+
+    <label>Father's Name:</label>
+    <input id="father" value="Rahul Arya" />
+
+    <label>Mother's Name:</label>
+    <input id="mother" value="Sushma" />
+
+    <label>School Name:</label>
+    <input id="school" value="Dr. D P S V M I C, Bilari, Moradabad" />
+
+    <label>Subjects (Format: Subject,Theory,Practical,Grade;):</label>
+    <textarea id="subjects">Hindi,59,30,A2;English,63,30,A1;Mathematics,60,30,A2;Science,62,30,A1;Social Science,52,30,A2;Drawing,63,30,A1;</textarea>
+
+    <button class="btn" onclick="generatePDF()">Generate PDF</button>
+  </div>
+
+  <script>
+    async function generatePDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF("p", "mm", "a4");
+      let y = 20;
+
+      doc.setFont("Helvetica", "bold");
+      doc.setFontSize(14);
+      doc.text("ENGLISH TRANSLATED MARKSHEET", 105, y, { align: "center" });
+      y += 8;
+      doc.setFontSize(11);
+      doc.text("(Uttar Pradesh Board - For MEXT Scholarship, Japan)", 105, y, { align: "center" });
+      y += 10;
+
+      doc.setFont("Helvetica", "normal");
+      doc.setFontSize(10);
+      const note = "This is to certify that the following is an accurate English translation of the original High School Examination - 2024 marksheet issued by the Board of High School and Intermediate Education, Uttar Pradesh, India.";
+      doc.text(note, 15, y, { maxWidth: 180 });
+      y += 18;
+
+      const fields = [
+        ["Name", document.getElementById("name").value],
+        ["Roll Number", document.getElementById("roll").value],
+        ["Date of Birth", document.getElementById("dob").value],
+        ["Father's Name", document.getElementById("father").value],
+        ["Mother's Name", document.getElementById("mother").value],
+        ["School", document.getElementById("school").value],
+        ["School Under", "Vidya Bharati Akhil Bharatiya Shiksha Sansthan"],
+        ["District/Centre/School Code", "21/14043/1087"],
+        ["Exam Type", "Regular (Full Exam)"],
+        ["Examination Period", "February/March 2024"],
+        ["Date of Issue", "20th April 2024"],
+        ["Place of Issue", "Prayagraj, Uttar Pradesh"]
+      ];
+
+      fields.forEach(([label, value]) => {
+        doc.text(`${label}: ${value}`, 15, y);
+        y += 6;
+      });
+
+      y += 6;
+      doc.setFont("Helvetica", "bold");
+      doc.text("SUBJECT-WISE MARKS AND GRADES", 15, y);
+      y += 6;
+
+      // Headers
+      doc.setFont("Helvetica", "bold");
+      doc.text("Subject", 15, y);
+      doc.text("Max", 55, y);
+      doc.text("Theory", 80, y);
+      doc.text("Practical", 110, y);
+      doc.text("Total", 140, y);
+      doc.text("Grade", 170, y);
+      y += 6;
+
+      // Subjects data
+      const lines = document.getElementById("subjects").value.trim().split(";");
+      let grandTotal = 0;
+
+      doc.setFont("Helvetica", "normal");
+      lines.forEach(line => {
+        if (!line) return;
+        const [sub, theory, practical, grade] = line.split(",");
+        const total = parseInt(theory) + parseInt(practical);
+        grandTotal += total;
+        doc.text(sub, 15, y);
+        doc.text("100", 55, y);
+        doc.text(theory, 80, y);
+        doc.text(practical, 110, y);
+        doc.text(String(total), 140, y);
+        doc.text(grade, 170, y);
+        y += 6;
+      });
+
+      y += 4;
+      const percentage = (grandTotal / 600 * 100).toFixed(2);
+      doc.setFont("Helvetica", "bold");
+      doc.text(`Total: ${grandTotal} / 600`, 15, y);
+      doc.text(`Percentage: ${percentage}%`, 100, y);
+      y += 10;
+
+      doc.setFont("Helvetica", "normal");
+      doc.text("Overall Result: PASSED", 15, y);
+      y += 6;
+      doc.text("Category of Moral, Yoga, Sports and Physical Education: A", 15, y);
+
+      y += 12;
+      doc.setFont("Helvetica", "italic");
+      doc.setFontSize(9);
+      const note2 = "Note: This document is officially translated for international academic verification use, including MEXT (Japanese Government Scholarship program) scholarship application.";
+      doc.text(note2, 15, y, { maxWidth: 180 });
+      y += 10;
+      doc.text("Verification Link: www.upmsp.edu.in", 15, y);
+
+      y += 20;
+      doc.setFont("Helvetica", "normal");
+      doc.setFontSize(10);
+      doc.text("School Stamp: ___________________", 15, y);
+      doc.text("Principal's Signature: ___________________", 115, y);
+
+      doc.save("MEXT_Translated_Marksheet.pdf");
+    }
+  </script>
 </body>
 </html>
