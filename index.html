@@ -2,38 +2,65 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Dhruv's Live Logs</title>
+  <title>Dhruv's ZIP Cracker</title>
   <style>
-    body { font-family: Arial, sans-serif; background:#f4f4f9; color:#333; text-align:center; }
-    .container { max-width:600px; margin:auto; padding:20px; background:#fff; border-radius:12px; box-shadow:0 0 10px rgba(0,0,0,0.1);}
-    h1 { color:#4a90e2; }
-    input, button { padding:10px; margin:8px; border-radius:8px; border:1px solid #ccc; width:90%; }
-    button { background:#4a90e2; color:#fff; border:none; cursor:pointer; }
-    button:hover { background:#357ABD; }
-    pre { text-align:left; background:#222; color:#0f0; padding:15px; border-radius:8px; height:300px; overflow:auto; }
+    body { font-family: monospace; background: #111; color: #0f0; text-align: center; }
+    .box { margin: 20px auto; padding: 20px; border: 2px solid #0f0; border-radius: 12px; width: 80%; max-width: 600px; }
+    textarea { width: 100%; height: 300px; background: #000; color: #0f0; padding: 10px; }
+    input, button { padding: 10px; margin: 10px; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Welcome to Dhruv's Live Logs</h1>
-    <p>Enter your API key below to fetch live server logs.</p>
-    <input id="apiKey" placeholder="Enter API key" />
-    <input id="serverUrl" placeholder="Enter your server URL (e.g. https://xxxx.trycloudflare.com)" />
-    <button onclick="startLogs()">🚀 Start Live Logs</button>
-    <h3>Live Logs:</h3>
-    <pre id="logs">Waiting for logs...</pre>
+  <div class="box">
+    <h2>🔐 Dhruv's Live ZIP Cracker (John)</h2>
+    <input type="text" id="apiKey" placeholder="Enter API Key"><br>
+    <input type="file" id="fileInput"><br>
+    <button onclick="uploadFile()">Start Cracking</button>
+    <h3>📜 Live Logs:</h3>
+    <textarea id="logs" readonly></textarea>
   </div>
 
   <script>
-    let interval;
+    const serverURL = "https://breeds-coordination-rs-seating.trycloudflare.com";
 
-    async function fetchLogs(apiKey, serverUrl) {
-      try {
-        const response = await fetch(`${serverUrl}/api/logs?key=${apiKey}`);
-        if (!response.ok) throw new Error("Invalid response");
-        const data = await response.json();
-        document.getElementById("logs").innerText = JSON.stringify(data, null, 2);
-      } catch (err) {
+    async function uploadFile() {
+      const apiKey = document.getElementById("apiKey").value;
+      const file = document.getElementById("fileInput").files[0];
+      if (!apiKey || !file) {
+        alert("Enter API key and choose a file!");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("key", apiKey);
+      formData.append("file", file);
+
+      const res = await fetch(`${serverURL}/upload`, { method: "POST", body: formData });
+      const data = await res.json();
+
+      if (data.job_id) {
+        startLogs(data.job_id);
+      } else {
+        alert("Error: " + JSON.stringify(data));
+      }
+    }
+
+    function startLogs(jobId) {
+      const logsBox = document.getElementById("logs");
+      logsBox.value = "⏳ Cracking started...\n";
+      const eventSource = new EventSource(`${serverURL}/logs/${jobId}`);
+
+      eventSource.onmessage = function(e) {
+        logsBox.value += e.data + "\n";
+        logsBox.scrollTop = logsBox.scrollHeight;
+        if (e.data.includes("[FINAL]")) {
+          eventSource.close();
+        }
+      };
+    }
+  </script>
+</body>
+</html>
         document.getElementById("logs").innerText = "Error: " + err;
       }
     }
